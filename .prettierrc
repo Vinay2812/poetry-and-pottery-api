@@ -1,0 +1,17 @@
+{
+  "importOrder": [
+    "^tracer$",
+    "<THIRD_PARTY_MODULES>",
+    "^[@]",
+    "^@/(.*)$",
+    "^[.]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "importOrderParserPlugins": ["typescript", "decorators-legacy", "jsx", "tsx"],
+  "plugins": [
+    "@trivago/prettier-plugin-sort-imports",
+    "prettier-plugin-packagejson"
+  ],
+  "endOfLine": "lf"
+}

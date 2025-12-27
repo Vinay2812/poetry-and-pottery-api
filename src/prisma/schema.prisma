@@ -1,0 +1,355 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id      Int      @id @default(autoincrement())
+  auth_id String   @unique
+  email   String   @unique
+  phone   String?
+  name    String?
+  image   String?
+  role    UserRole @default(USER)
+
+  subscribed_to_newsletter Boolean   @default(false)
+  newsletter_subscribed_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  reviews             Review[]
+  likes               ReviewLike[]
+  wishlists           Wishlist[]
+  carts               Cart[]
+  product_orders      ProductOrder[]
+  event_registrations EventRegistration[]
+  user_addresses      UserAddress[]
+
+  @@map("users")
+}
+
+model UserAddress {
+  id      Int @id @default(autoincrement())
+  user_id Int
+
+  address_line_1 String
+  address_line_2 String?
+  landmark       String?
+  city           String
+  state          String
+  zip            String
+  contact_number String?
+  name           String
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("user_addresses")
+}
+
+model Product {
+  id                 Int      @id @default(autoincrement())
+  slug               String   @unique @db.Text
+  name               String
+  description        String?
+  instructions       String[]
+  color_code         String
+  color_name         String
+  material           String
+  total_quantity     Int
+  available_quantity Int
+  is_active          Boolean  @default(true)
+  price              Int
+  image_urls         String[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  purchased_products PurchasedProductItem[]
+  product_categories ProductCategory[]
+  wishlists          Wishlist[]
+  carts              Cart[]
+  reviews            Review[]
+
+  @@index([price])
+  @@map("products")
+}
+
+model ProductCategory {
+  id         Int    @id @default(autoincrement())
+  product_id Int
+  category   String
+
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, category])
+  @@index([product_id])
+  @@map("product_categories")
+}
+
+enum EventLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum EventStatus {
+  UPCOMING
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+model Event {
+  id              String      @id @default(nanoid(16))
+  slug            String      @unique @db.Text
+  title           String
+  description     String
+  starts_at       DateTime
+  ends_at         DateTime
+  location        String
+  full_location   String
+  total_seats     Int         @default(10)
+  available_seats Int         @default(10)
+  instructor      String
+  includes        String[]
+  price           Int
+  image           String
+  highlights      String[]
+  gallery         String[]
+  status          EventStatus @default(UPCOMING)
+  level           EventLevel  @default(BEGINNER)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  reviews             Review[]
+  event_registrations EventRegistration[]
+
+  @@index([starts_at])
+  @@index([ends_at])
+  @@map("events")
+}
+
+enum EventRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CONFIRMED
+  CANCELLED
+}
+
+model EventRegistration {
+  id             String                  @id @default(nanoid(16))
+  event_id       String
+  user_id        Int
+  seats_reserved Int                     @default(1)
+  price          Int
+  discount       Int                     @default(0)
+  status         EventRegistrationStatus @default(PENDING)
+  request_at     DateTime?
+  approved_at    DateTime?
+  paid_at        DateTime?
+  confirmed_at   DateTime?
+  cancelled_at   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, user_id])
+  @@index([event_id])
+  @@index([user_id])
+  @@map("event_registrations")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  rating     Int
+  review     String?
+  image_urls String[]
+
+  // Polymorphic - one must be set, not both
+  product_id Int?
+  event_id   String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  product Product?     @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  event   Event?       @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  likes   ReviewLike[]
+
+  @@unique([product_id, user_id])
+  @@unique([event_id, user_id])
+  @@index([product_id])
+  @@index([event_id])
+  @@index([user_id])
+  @@map("reviews")
+}
+
+model ReviewLike {
+  id        Int @id @default(autoincrement())
+  review_id Int
+  user_id   Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  review Review @relation(fields: [review_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([review_id, user_id])
+  @@index([review_id])
+  @@index([user_id])
+  @@map("review_likes")
+}
+
+model Wishlist {
+  id         Int @id @default(autoincrement())
+  user_id    Int
+  product_id Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id])
+  @@index([user_id])
+  @@index([product_id])
+  @@map("wishlists")
+}
+
+model Cart {
+  id         Int @id @default(autoincrement())
+  user_id    Int
+  product_id Int
+  quantity   Int @default(1)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id])
+  @@index([user_id])
+  @@index([product_id])
+  @@map("carts")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+model ProductOrder {
+  id           String      @id @default(nanoid(16))
+  user_id      Int
+  shipping_fee Int
+  subtotal     Int
+  discount     Int         @default(0)
+  total        Int
+  status       OrderStatus @default(PENDING)
+  request_at   DateTime?
+  approved_at  DateTime?
+  paid_at      DateTime?
+  shipped_at   DateTime?
+  delivered_at DateTime?
+  cancelled_at DateTime?
+  returned_at  DateTime?
+  refunded_at  DateTime?
+
+  shipping_address Json
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  ordered_products PurchasedProductItem[]
+
+  @@map("product_orders")
+}
+
+model PurchasedProductItem {
+  id         Int    @id @default(autoincrement())
+  order_id   String
+  product_id Int
+  quantity   Int    @default(1)
+  discount   Int    @default(0)
+  price      Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  order   ProductOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([order_id, product_id])
+  @@index([order_id])
+  @@index([product_id])
+  @@map("purchased_product_items")
+}
+
+// CMS Models
+
+model SiteSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  /// [SettingValue]
+  value Json
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("site_settings")
+}
+
+model ContentPage {
+  id        Int     @id @default(autoincrement())
+  slug      String  @unique
+  title     String
+  /// [ContentBlocks]
+  content   Json
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("content_pages")
+}
