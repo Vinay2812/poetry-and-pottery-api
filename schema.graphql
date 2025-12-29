@@ -3,7 +3,64 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+type ProductBase {
+  available_quantity: Int!
+  avg_rating: Int!
+  color_code: String!
+  color_name: String!
+  id: Int!
+  image_urls: String!
+  in_wishlist: Boolean!
+  material: Int!
+  name: String!
+  price: Int!
+  reviews_count: Int!
+  slug: String!
+  total_quantity: Int!
+}
+
+"""The order by which the products should be sorted"""
+enum ProductOrderBy {
+  FEATURED
+  NEW
+  PRICE_HIGH_TO_LOW
+  PRICE_LOW_TO_HIGH
+  RATING_HIGH_TO_LOW
+  RATING_LOW_TO_HIGH
+}
+
+type ProductsFilter {
+  categories: [String!]
+  limit: Int
+  materials: [String!]
+  max_price: Int
+  min_price: Int
+  order_by: ProductOrderBy
+  page: Int
+  search: String
+}
+
+input ProductsFilterInput {
+  categories: [String!]
+  limit: Int
+  materials: [String!]
+  max_price: Int
+  min_price: Int
+  order_by: ProductOrderBy
+  page: Int
+  search: String
+}
+
+type ProductsResponse {
+  filter: ProductsFilter!
+  products: [ProductBase!]!
+  total_pages: Int!
+  total_products: Int!
+}
+
 type Query {
+  products(filter: ProductsFilterInput!): ProductsResponse!
+  recommendedProducts(limit: Int): [ProductBase!]!
   user: UserResponse!
 }
 

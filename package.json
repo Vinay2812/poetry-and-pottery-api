@@ -18,7 +18,7 @@
     "prepare": "husky",
     "prettier": "prettier --check .",
     "prettier:format": "prettier --write .",
-    "prisma:generate": "bunx prisma generate",
+    "prisma:generate": "bunx prisma generate --sql",
     "prisma:reset": "bunx prisma migrate reset",
     "prisma:studio": "bunx prisma studio"
   },

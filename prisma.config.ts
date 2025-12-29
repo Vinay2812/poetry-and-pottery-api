@@ -10,4 +10,7 @@ export default defineConfig({
   datasource: {
     url: process.env["DATABASE_URL"],
   },
+  typedSql: {
+    path: "src/prisma/sql/",
+  },
 });
