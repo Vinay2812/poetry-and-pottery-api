@@ -16,3 +16,8 @@ export const REPLICA_URL = process.env["REPLICA_URL"] || DATABASE_URL;
 export const ORIGINS = process.env["ORIGINS"]?.split(",") || [];
 
 export const PEXELS_API_KEY = process.env["PEXELS_API_KEY"];
+
+export const CLERK_SECRET_KEY = process.env["CLERK_SECRET_KEY"];
+
+export const CLERK_PUBLISHABLE_KEY =
+  process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"];

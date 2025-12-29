@@ -3,20 +3,59 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+type PriceHistogramBucket {
+  count: Int!
+  max: Int!
+  min: Int!
+}
+
+type PriceRange {
+  max: Int!
+  min: Int!
+}
+
 type ProductBase {
   available_quantity: Int!
   avg_rating: Int!
   color_code: String!
   color_name: String!
   id: Int!
-  image_urls: String!
+  image_urls: [String!]!
   in_wishlist: Boolean!
-  material: Int!
+  material: String!
   name: String!
   price: Int!
   reviews_count: Int!
   slug: String!
   total_quantity: Int!
+}
+
+type ProductDetail {
+  available_quantity: Int!
+  avg_rating: Int!
+  categories: [String!]!
+  color_code: String!
+  color_name: String!
+  created_at: DateTime!
+  description: String
+  id: Int!
+  image_urls: [String!]!
+  in_wishlist: Boolean!
+  instructions: [String!]!
+  is_active: Boolean!
+  material: String!
+  name: String!
+  price: Int!
+  reviews: [ProductReview!]!
+  reviews_count: Int!
+  slug: String!
+  total_quantity: Int!
+  updated_at: DateTime!
 }
 
 """The order by which the products should be sorted"""
@@ -27,6 +66,17 @@ enum ProductOrderBy {
   PRICE_LOW_TO_HIGH
   RATING_HIGH_TO_LOW
   RATING_LOW_TO_HIGH
+}
+
+type ProductReview {
+  created_at: DateTime!
+  id: Int!
+  image_urls: [String!]!
+  likes: [ReviewLike!]!
+  rating: Int!
+  review: String
+  user: ReviewUser
+  user_id: Int!
 }
 
 type ProductsFilter {
@@ -51,17 +101,41 @@ input ProductsFilterInput {
   search: String
 }
 
+type ProductsMeta {
+  categories: [String!]!
+  materials: [String!]!
+  price_histogram: [PriceHistogramBucket!]!
+  price_range: PriceRange!
+}
+
 type ProductsResponse {
   filter: ProductsFilter!
+  meta: ProductsMeta!
   products: [ProductBase!]!
   total_pages: Int!
   total_products: Int!
 }
 
 type Query {
+  bestSellers(limit: Int): [ProductBase!]!
+  featuredProducts(limit: Int): [ProductBase!]!
+  productById(id: Int!): ProductDetail
+  productBySlug(slug: String!): ProductDetail
   products(filter: ProductsFilterInput!): ProductsResponse!
   recommendedProducts(limit: Int): [ProductBase!]!
+  relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
   user: UserResponse!
+}
+
+type ReviewLike {
+  id: Int!
+  user_id: Int!
+}
+
+type ReviewUser {
+  id: Int!
+  image: String
+  name: String
 }
 
 type UserResponse {

@@ -1,3 +1,4 @@
+import { GraphQLDateTime } from "graphql-scalars";
 import {
   Field,
   InputType,
@@ -6,7 +7,7 @@ import {
   registerEnumType,
 } from "type-graphql";
 
-enum ProductOrderBy {
+export enum ProductOrderBy {
   FEATURED = "featured",
   NEW = "new",
   PRICE_LOW_TO_HIGH = "price_low_to_high",
@@ -31,7 +32,7 @@ export class ProductBase {
   @Field(() => String)
   name!: string;
 
-  @Field(() => String)
+  @Field(() => [String])
   image_urls!: string[];
 
   @Field(() => Int)
@@ -43,7 +44,7 @@ export class ProductBase {
   @Field(() => Int)
   avg_rating!: number;
 
-  @Field(() => Int)
+  @Field(() => String)
   material!: string;
 
   @Field(() => Int)
@@ -60,6 +61,117 @@ export class ProductBase {
 
   @Field(() => Boolean)
   in_wishlist!: boolean;
+}
+
+@ObjectType()
+export class ReviewUser {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String, { nullable: true })
+  name?: string | null;
+
+  @Field(() => String, { nullable: true })
+  image?: string | null;
+}
+
+@ObjectType()
+export class ReviewLike {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => Int)
+  user_id!: number;
+}
+
+@ObjectType()
+export class ProductReview {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => Int)
+  user_id!: number;
+
+  @Field(() => Int)
+  rating!: number;
+
+  @Field(() => String, { nullable: true })
+  review?: string | null;
+
+  @Field(() => [String])
+  image_urls!: string[];
+
+  @Field(() => GraphQLDateTime)
+  created_at!: Date;
+
+  @Field(() => ReviewUser, { nullable: true })
+  user?: ReviewUser | null;
+
+  @Field(() => [ReviewLike])
+  likes!: ReviewLike[];
+}
+
+@ObjectType()
+export class ProductDetail {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  slug!: string;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => [String])
+  image_urls!: string[];
+
+  @Field(() => Int)
+  price!: number;
+
+  @Field(() => Int)
+  reviews_count!: number;
+
+  @Field(() => Int)
+  avg_rating!: number;
+
+  @Field(() => String)
+  material!: string;
+
+  @Field(() => Int)
+  total_quantity!: number;
+
+  @Field(() => Int)
+  available_quantity!: number;
+
+  @Field(() => String)
+  color_code!: string;
+
+  @Field(() => String)
+  color_name!: string;
+
+  @Field(() => Boolean)
+  in_wishlist!: boolean;
+
+  @Field(() => String, { nullable: true })
+  description?: string | null;
+
+  @Field(() => [String])
+  instructions!: string[];
+
+  @Field(() => Boolean)
+  is_active!: boolean;
+
+  @Field(() => GraphQLDateTime)
+  created_at!: Date;
+
+  @Field(() => GraphQLDateTime)
+  updated_at!: Date;
+
+  @Field(() => [String])
+  categories!: string[];
+
+  @Field(() => [ProductReview])
+  reviews!: ProductReview[];
 }
 
 @ObjectType()
@@ -126,6 +238,42 @@ export class ProductsFilter {
 }
 
 @ObjectType()
+export class PriceRange {
+  @Field(() => Int)
+  min!: number;
+
+  @Field(() => Int)
+  max!: number;
+}
+
+@ObjectType()
+export class PriceHistogramBucket {
+  @Field(() => Int)
+  min!: number;
+
+  @Field(() => Int)
+  max!: number;
+
+  @Field(() => Int)
+  count!: number;
+}
+
+@ObjectType()
+export class ProductsMeta {
+  @Field(() => [String])
+  categories!: string[];
+
+  @Field(() => [String])
+  materials!: string[];
+
+  @Field(() => PriceRange)
+  price_range!: PriceRange;
+
+  @Field(() => [PriceHistogramBucket])
+  price_histogram!: PriceHistogramBucket[];
+}
+
+@ObjectType()
 export class ProductsResponse {
   @Field(() => [ProductBase])
   products!: ProductBase[];
@@ -138,4 +286,7 @@ export class ProductsResponse {
 
   @Field(() => Int)
   total_pages!: number;
+
+  @Field(() => ProductsMeta)
+  meta!: ProductsMeta;
 }

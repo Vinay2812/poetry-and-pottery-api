@@ -7,9 +7,19 @@ import { UserRole } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
 import { clerkClient, getAuth } from "@clerk/express";
 
-const NON_AUTH_RESOLVERS: string[] = [
-  "IntrospectionQuery",
+const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
+  "Products",
+  "ProductBySlug",
+  "ProductById",
+  "RelatedProducts",
+  "FeaturedProducts",
+  "BestSellers",
   "RecommendedProducts",
+];
+
+const NON_AUTH_RESOLVERS: string[] = [
+  ...PRODUCT_NON_AUTH_RESOLVERS,
+  "IntrospectionQuery",
 ];
 
 export const authMiddleWare = async (

@@ -10,18 +10,23 @@ import http from "http";
 import "reflect-metadata";
 import { buildSchema } from "type-graphql";
 
-import { ENV, ORIGINS, PORT } from "@/consts/env";
+import {
+  CLERK_PUBLISHABLE_KEY,
+  CLERK_SECRET_KEY,
+  ENV,
+  ORIGINS,
+  PORT,
+} from "@/consts/env";
 import * as Resolvers from "@/resolvers";
 import { Context } from "@/types/context";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
+import { clerkMiddleware } from "@clerk/express";
 import { authMiddleWare } from "@middlewares/auth.middleware";
 import { errorMiddleware } from "@middlewares/error.middleware";
 import { logMiddleware } from "@middlewares/log.middleware";
 
 import packageJson from "../package.json";
-import { prisma } from "./lib/prisma";
-import { ProductsResolver } from "./resolvers/products/products.resolver";
 
 class App {
   private app = express();
@@ -75,6 +80,12 @@ class App {
         limit: "256mb",
         extended: true,
         parameterLimit: 200000,
+      }),
+    );
+    this.app.use(
+      clerkMiddleware({
+        secretKey: CLERK_SECRET_KEY,
+        publishableKey: CLERK_PUBLISHABLE_KEY,
       }),
     );
     this.app.use(compression());
