@@ -8,6 +8,11 @@ input AddToCartInput {
   quantity: Int = 1
 }
 
+type CancelRegistrationResponse {
+  error: String
+  success: Boolean!
+}
+
 type CartItem {
   created_at: DateTime!
   id: Int!
@@ -39,6 +44,155 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type EventBase {
+  available_seats: Int!
+  avg_rating: Float
+  created_at: DateTime!
+  description: String!
+  ends_at: DateTime!
+  full_location: String!
+  gallery: [String!]!
+  highlights: [String!]!
+  id: String!
+  image: String!
+  includes: [String!]!
+  instructor: String!
+  level: EventLevel!
+  location: String!
+  price: Int!
+  registrations_count: Int!
+  reviews_count: Int!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus!
+  title: String!
+  total_seats: Int!
+  updated_at: DateTime!
+}
+
+type EventDetail {
+  available_seats: Int!
+  avg_rating: Float
+  created_at: DateTime!
+  description: String!
+  ends_at: DateTime!
+  full_location: String!
+  gallery: [String!]!
+  highlights: [String!]!
+  id: String!
+  image: String!
+  includes: [String!]!
+  instructor: String!
+  is_registered: Boolean!
+  level: EventLevel!
+  location: String!
+  price: Int!
+  registrations_count: Int!
+  reviews: [EventReview!]!
+  reviews_count: Int!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus!
+  title: String!
+  total_seats: Int!
+  updated_at: DateTime!
+}
+
+"""The difficulty level of an event"""
+enum EventLevel {
+  ADVANCED
+  BEGINNER
+  INTERMEDIATE
+}
+
+type EventRegistration {
+  approved_at: DateTime
+  cancelled_at: DateTime
+  confirmed_at: DateTime
+  created_at: DateTime!
+  discount: Int!
+  event: RegistrationEvent!
+  event_id: String!
+  has_reviewed: Boolean!
+  id: String!
+  paid_at: DateTime
+  price: Int!
+  request_at: DateTime
+  seats_reserved: Int!
+  status: EventRegistrationStatus!
+  updated_at: DateTime!
+  user: RegistrationUser!
+  user_id: Int!
+}
+
+"""The status of an event registration"""
+enum EventRegistrationStatus {
+  APPROVED
+  CANCELLED
+  CONFIRMED
+  PAID
+  PENDING
+  REJECTED
+}
+
+type EventReview {
+  created_at: DateTime!
+  event_id: String
+  id: Int!
+  image_urls: [String!]!
+  likes: [EventReviewLike!]!
+  rating: Int!
+  review: String
+  updated_at: DateTime!
+  user: EventReviewUser!
+  user_id: Int!
+}
+
+type EventReviewLike {
+  id: Int!
+  review_id: Int!
+  user_id: Int!
+}
+
+type EventReviewUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+}
+
+"""The status of an event"""
+enum EventStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+  INACTIVE
+  UPCOMING
+}
+
+type EventWithUserContext {
+  current_user_id: Int
+  event: EventDetail!
+  is_past_event: Boolean!
+  registration: EventRegistration
+}
+
+input EventsFilterInput {
+  level: EventLevel
+  limit: Int = 12
+  page: Int = 1
+  search: String
+  status: EventStatus
+}
+
+type EventsResponse {
+  data: [EventBase!]!
+  levels: [EventLevel!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -48,9 +202,11 @@ type Mutation {
   addToCart(input: AddToCartInput!): CartMutationResponse!
   addToWishlist(productId: Int!): WishlistMutationResponse!
   cancelOrder(orderId: String!): OrderMutationResponse!
+  cancelRegistration(registrationId: String!): CancelRegistrationResponse!
   clearCart: Boolean!
   createOrder(input: CreateOrderInput!): OrderMutationResponse!
   moveToCart(productId: Int!): Boolean!
+  registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
   removeFromCart(productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
@@ -242,19 +398,83 @@ type Query {
   bestSellers(limit: Int): [ProductBase!]!
   cart: CartResponse!
   categories: [String!]!
+  completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
+  eventById(id: String!): EventDetail
+  eventBySlug(slug: String!): EventDetail
+  eventWithUserContext(eventId: String!): EventWithUserContext
+  events(filter: EventsFilterInput): EventsResponse!
   featuredProducts(limit: Int): [ProductBase!]!
   materials: [String!]!
   order(id: String!): Order
   orders(filter: OrdersFilterInput): OrdersResponse!
+  pastEvents(filter: EventsFilterInput): EventsResponse!
   productById(id: Int!): ProductDetail
   productBySlug(slug: String!): ProductDetail
   products(filter: ProductsFilterInput!): ProductsResponse!
   recommendedProducts(limit: Int): [ProductBase!]!
+  registrationById(registrationId: String!): EventRegistration
   relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
+  upcomingEvents(filter: EventsFilterInput): EventsResponse!
+  upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
   userCounts: UserCounts!
+  userRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
   wishlistIds: [Int!]!
+}
+
+input RegisterForEventInput {
+  eventId: String!
+  seats: Int = 1
+}
+
+type RegisterForEventResponse {
+  error: String
+  registration: EventRegistration
+  success: Boolean!
+}
+
+type RegistrationEvent {
+  available_seats: Int!
+  created_at: DateTime!
+  description: String!
+  ends_at: DateTime!
+  full_location: String!
+  gallery: [String!]!
+  highlights: [String!]!
+  id: String!
+  image: String!
+  includes: [String!]!
+  instructor: String!
+  level: EventLevel!
+  location: String!
+  price: Int!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus!
+  title: String!
+  total_seats: Int!
+  updated_at: DateTime!
+}
+
+type RegistrationUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+}
+
+input RegistrationsFilterInput {
+  limit: Int = 12
+  page: Int = 1
+  search: String
+}
+
+type RegistrationsResponse {
+  data: [EventRegistration!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
 }
 
 type ReviewLike {

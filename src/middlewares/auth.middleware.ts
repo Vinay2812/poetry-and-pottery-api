@@ -17,8 +17,18 @@ const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
   "RecommendedProducts",
 ];
 
+const EVENT_NON_AUTH_RESOLVERS: string[] = [
+  "Events",
+  "EventBySlug",
+  "EventById",
+  "UpcomingEvents",
+  "PastEvents",
+  "EventWithUserContext",
+];
+
 const NON_AUTH_RESOLVERS: string[] = [
   ...PRODUCT_NON_AUTH_RESOLVERS,
+  ...EVENT_NON_AUTH_RESOLVERS,
   "IntrospectionQuery",
 ];
 
