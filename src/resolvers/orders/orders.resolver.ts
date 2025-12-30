@@ -14,6 +14,7 @@ import {
   OrderStatus,
   OrdersFilterInput,
   OrdersResponse,
+  OrderUser,
   ShippingAddress,
 } from "./orders.type";
 
@@ -126,6 +127,11 @@ function mapOrder(
     shipping_address: unknown;
     created_at: Date;
     updated_at: Date;
+    user: {
+      id: number;
+      email: string;
+      name: string | null;
+    };
     ordered_products: {
       id: number;
       order_id: string;
@@ -156,6 +162,11 @@ function mapOrder(
   return {
     id: order.id,
     user_id: order.user_id,
+    user: {
+      id: order.user.id,
+      email: order.user.email,
+      name: order.user.name,
+    } as OrderUser,
     shipping_fee: order.shipping_fee,
     subtotal: order.subtotal,
     discount: order.discount,
@@ -216,6 +227,9 @@ export class OrdersResolver {
         ctx.prisma.productOrder.findMany({
           where,
           include: {
+            user: {
+              select: { id: true, email: true, name: true },
+            },
             ordered_products: {
               include: {
                 product: {
@@ -287,6 +301,9 @@ export class OrdersResolver {
             user_id: userId,
           },
           include: {
+            user: {
+              select: { id: true, email: true, name: true },
+            },
             ordered_products: {
               include: {
                 product: {
@@ -386,6 +403,9 @@ export class OrdersResolver {
             },
           },
           include: {
+            user: {
+              select: { id: true, email: true, name: true },
+            },
             ordered_products: {
               include: {
                 product: {
@@ -460,6 +480,9 @@ export class OrdersResolver {
             cancelled_at: new Date(),
           },
           include: {
+            user: {
+              select: { id: true, email: true, name: true },
+            },
             ordered_products: {
               include: {
                 product: {

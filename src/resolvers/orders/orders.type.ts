@@ -84,12 +84,27 @@ export class OrderItem {
 }
 
 @ObjectType()
+export class OrderUser {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  email!: string;
+
+  @Field(() => String, { nullable: true })
+  name?: string | null;
+}
+
+@ObjectType()
 export class Order {
   @Field(() => String)
   id!: string;
 
   @Field(() => Int)
   user_id!: number;
+
+  @Field(() => OrderUser)
+  user!: OrderUser;
 
   @Field(() => Int)
   shipping_fee!: number;

@@ -76,6 +76,7 @@ type Order {
   subtotal: Int!
   total: Int!
   updated_at: DateTime!
+  user: OrderUser!
   user_id: Int!
 }
 
@@ -108,6 +109,12 @@ enum OrderStatus {
   REFUNDED
   RETURNED
   SHIPPED
+}
+
+type OrderUser {
+  email: String!
+  id: Int!
+  name: String
 }
 
 input OrdersFilterInput {
