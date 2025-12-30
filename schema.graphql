@@ -3,10 +3,47 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+input AddToCartInput {
+  product_id: Int!
+  quantity: Int = 1
+}
+
+type CartItem {
+  created_at: DateTime!
+  id: Int!
+  product: ProductBase!
+  product_id: Int!
+  quantity: Int!
+  updated_at: DateTime!
+  user_id: Int!
+}
+
+type CartMutationResponse {
+  item: CartItem
+  success: Boolean!
+}
+
+type CartResponse {
+  items: [CartItem!]!
+  subtotal: Int!
+  total: Int!
+}
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+type Mutation {
+  addToCart(input: AddToCartInput!): CartMutationResponse!
+  addToWishlist(productId: Int!): WishlistMutationResponse!
+  clearCart: Boolean!
+  moveToCart(productId: Int!): Boolean!
+  removeFromCart(productId: Int!): Boolean!
+  removeFromWishlist(productId: Int!): Boolean!
+  toggleWishlist(productId: Int!): ToggleWishlistResponse!
+  updateCartQuantity(input: UpdateCartQuantityInput!): CartMutationResponse!
+}
 
 type PriceHistogramBucket {
   count: Int!
@@ -118,6 +155,7 @@ type ProductsResponse {
 
 type Query {
   bestSellers(limit: Int): [ProductBase!]!
+  cart: CartResponse!
   featuredProducts(limit: Int): [ProductBase!]!
   productById(id: Int!): ProductDetail
   productBySlug(slug: String!): ProductDetail
@@ -125,6 +163,8 @@ type Query {
   recommendedProducts(limit: Int): [ProductBase!]!
   relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
   user: UserResponse!
+  wishlist(filter: WishlistFilterInput): WishlistResponse!
+  wishlistIds: [Int!]!
 }
 
 type ReviewLike {
@@ -136,6 +176,23 @@ type ReviewUser {
   id: Int!
   image: String
   name: String
+}
+
+"""The action performed when toggling wishlist"""
+enum ToggleAction {
+  ADDED
+  REMOVED
+}
+
+type ToggleWishlistResponse {
+  action: ToggleAction!
+  item: WishlistItem
+  success: Boolean!
+}
+
+input UpdateCartQuantityInput {
+  product_id: Int!
+  quantity: Int!
 }
 
 type UserResponse {
@@ -153,4 +210,30 @@ type UserResponse {
 enum UserRole {
   ADMIN
   USER
+}
+
+input WishlistFilterInput {
+  limit: Int = 12
+  page: Int = 1
+}
+
+type WishlistItem {
+  created_at: DateTime!
+  id: Int!
+  product: ProductBase!
+  product_id: Int!
+  updated_at: DateTime!
+  user_id: Int!
+}
+
+type WishlistMutationResponse {
+  item: WishlistItem
+  success: Boolean!
+}
+
+type WishlistResponse {
+  data: [WishlistItem!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
 }

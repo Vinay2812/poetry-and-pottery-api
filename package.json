@@ -13,7 +13,6 @@
     "db:reset": "bun prisma:reset && bunx prisma migrate deploy && bun db:init",
     "dev": "nodemon src/server.ts",
     "husky": "husky",
-    "lint": "eslint .",
     "migration:apply": "bunx prisma migrate deploy",
     "migration:create": "bunx prisma migrate dev --create-only",
     "prepare": "husky",
