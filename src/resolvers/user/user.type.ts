@@ -34,3 +34,18 @@ export class UserResponse {
   @Field(() => String, { nullable: true })
   phone?: string | null;
 }
+
+@ObjectType()
+export class UserCounts {
+  @Field(() => Int)
+  cartCount!: number;
+
+  @Field(() => Int)
+  wishlistCount!: number;
+
+  @Field(() => Int)
+  eventRegistrationsCount!: number;
+
+  @Field(() => Int)
+  pendingOrdersCount!: number;
+}
