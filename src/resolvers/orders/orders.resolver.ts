@@ -12,9 +12,9 @@ import {
   OrderItem,
   OrderMutationResponse,
   OrderStatus,
+  OrderUser,
   OrdersFilterInput,
   OrdersResponse,
-  OrderUser,
   ShippingAddress,
 } from "./orders.type";
 
