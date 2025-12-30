@@ -29,20 +29,98 @@ type CartResponse {
   total: Int!
 }
 
+input CreateOrderInput {
+  shippingAddress: ShippingAddressInput!
+  shippingFee: Int!
+}
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
 
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
 type Mutation {
   addToCart(input: AddToCartInput!): CartMutationResponse!
   addToWishlist(productId: Int!): WishlistMutationResponse!
+  cancelOrder(orderId: String!): OrderMutationResponse!
   clearCart: Boolean!
+  createOrder(input: CreateOrderInput!): OrderMutationResponse!
   moveToCart(productId: Int!): Boolean!
   removeFromCart(productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
   updateCartQuantity(input: UpdateCartQuantityInput!): CartMutationResponse!
+}
+
+type Order {
+  approved_at: DateTime
+  cancelled_at: DateTime
+  created_at: DateTime!
+  delivered_at: DateTime
+  discount: Int!
+  id: String!
+  ordered_products: [OrderItem!]!
+  paid_at: DateTime
+  refunded_at: DateTime
+  request_at: DateTime
+  returned_at: DateTime
+  shipped_at: DateTime
+  shipping_address: JSON!
+  shipping_fee: Int!
+  status: OrderStatus!
+  subtotal: Int!
+  total: Int!
+  updated_at: DateTime!
+  user_id: Int!
+}
+
+type OrderItem {
+  created_at: DateTime!
+  discount: Int!
+  has_reviewed: Boolean!
+  id: Int!
+  order_id: String!
+  price: Int!
+  product: ProductBase!
+  product_id: Int!
+  quantity: Int!
+  updated_at: DateTime!
+}
+
+type OrderMutationResponse {
+  error: String
+  order: Order
+  success: Boolean!
+}
+
+"""The status of an order"""
+enum OrderStatus {
+  CANCELLED
+  DELIVERED
+  PAID
+  PENDING
+  PROCESSING
+  REFUNDED
+  RETURNED
+  SHIPPED
+}
+
+input OrdersFilterInput {
+  limit: Int = 10
+  page: Int = 1
+  search: String
+}
+
+type OrdersResponse {
+  data: [Order!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
 }
 
 type PriceHistogramBucket {
@@ -159,6 +237,8 @@ type Query {
   categories: [String!]!
   featuredProducts(limit: Int): [ProductBase!]!
   materials: [String!]!
+  order(id: String!): Order
+  orders(filter: OrdersFilterInput): OrdersResponse!
   productById(id: Int!): ProductDetail
   productBySlug(slug: String!): ProductDetail
   products(filter: ProductsFilterInput!): ProductsResponse!
@@ -179,6 +259,16 @@ type ReviewUser {
   id: Int!
   image: String
   name: String
+}
+
+input ShippingAddressInput {
+  addressLine1: String!
+  addressLine2: String
+  city: String!
+  contactNumber: String
+  name: String!
+  state: String!
+  zip: String!
 }
 
 """The action performed when toggling wishlist"""
