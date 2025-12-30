@@ -156,13 +156,16 @@ type ProductsResponse {
 type Query {
   bestSellers(limit: Int): [ProductBase!]!
   cart: CartResponse!
+  categories: [String!]!
   featuredProducts(limit: Int): [ProductBase!]!
+  materials: [String!]!
   productById(id: Int!): ProductDetail
   productBySlug(slug: String!): ProductDetail
   products(filter: ProductsFilterInput!): ProductsResponse!
   recommendedProducts(limit: Int): [ProductBase!]!
   relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
   user: UserResponse!
+  userCounts: UserCounts!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
   wishlistIds: [Int!]!
 }
@@ -193,6 +196,13 @@ type ToggleWishlistResponse {
 input UpdateCartQuantityInput {
   product_id: Int!
   quantity: Int!
+}
+
+type UserCounts {
+  cartCount: Int!
+  eventRegistrationsCount: Int!
+  pendingOrdersCount: Int!
+  wishlistCount: Int!
 }
 
 type UserResponse {

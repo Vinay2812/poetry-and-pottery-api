@@ -613,4 +613,35 @@ export class ProductsResolver {
       return pickManyUnique(mappedProducts, limit);
     });
   }
+
+  @Query(() => [String])
+  async categories(): Promise<string[]> {
+    return tryCatchAsync(async () => {
+      const categoryCounts = await prisma.productCategory.groupBy({
+        by: ["category"],
+        _count: {
+          product_id: true,
+        },
+        orderBy: {
+          _count: {
+            product_id: "desc",
+          },
+        },
+      });
+
+      return categoryCounts.map((c) => c.category);
+    });
+  }
+
+  @Query(() => [String])
+  async materials(): Promise<string[]> {
+    return tryCatchAsync(async () => {
+      const materials = await prisma.product.findMany({
+        where: { is_active: true },
+        distinct: ["material"],
+        select: { material: true },
+      });
+      return materials.map((m) => m.material);
+    });
+  }
 }
