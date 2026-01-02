@@ -87,6 +87,16 @@ export class ProductsResolver {
       const page = filter.page ?? 1;
       const offset = (page - 1) * limit;
 
+      const priceFilter =
+        filter.min_price !== undefined || filter.max_price !== undefined
+          ? {
+              price: {
+                ...(filter.min_price !== undefined && { gte: filter.min_price }),
+                ...(filter.max_price !== undefined && { lte: filter.max_price }),
+              },
+            }
+          : {};
+
       const where = {
         is_active: true,
         ...(filter.search && {
@@ -100,12 +110,7 @@ export class ProductsResolver {
             },
           ],
         }),
-        ...(filter.min_price !== undefined && {
-          price: { gte: filter.min_price },
-        }),
-        ...(filter.max_price !== undefined && {
-          price: { ...{ lte: filter.max_price } },
-        }),
+        ...priceFilter,
         ...(filter.categories?.length && {
           product_categories: {
             some: { category: { in: filter.categories } },
