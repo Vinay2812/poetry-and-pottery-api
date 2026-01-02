@@ -124,7 +124,7 @@ function mapOrder(
     cancelled_at: Date | null;
     returned_at: Date | null;
     refunded_at: Date | null;
-    shipping_address: unknown;
+    shipping_address: unknown; // Prisma JSON field - cast to ShippingAddress in mapping
     created_at: Date;
     updated_at: Date;
     user: {
@@ -381,19 +381,19 @@ export class OrdersResolver {
         (sum, item) => sum + item.product.price * item.quantity,
         0,
       );
-      const total = subtotal + input.shippingFee;
+      const total = subtotal + input.shipping_fee;
 
       // Create order and clear cart in transaction
       const [order] = await ctx.prisma.$transaction([
         ctx.prisma.productOrder.create({
           data: {
             user_id: userId,
-            shipping_fee: input.shippingFee,
+            shipping_fee: input.shipping_fee,
             subtotal,
             total,
             status: PrismaOrderStatus.PENDING,
             request_at: new Date(),
-            shipping_address: input.shippingAddress,
+            shipping_address: input.shipping_address,
             ordered_products: {
               create: cartItems.map((item) => ({
                 product_id: item.product_id,

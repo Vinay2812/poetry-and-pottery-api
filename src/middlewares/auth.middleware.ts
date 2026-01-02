@@ -134,3 +134,17 @@ export function authRequired(
     return next();
   });
 }
+
+export function adminRequired(errorMessage: string = "Admin access required") {
+  return createMethodMiddlewareDecorator<Context>(async ({ context }, next) => {
+    if (!context.user) {
+      throw new GraphQLError("User is not authenticated");
+    }
+
+    if (context.user.role !== UserRole.ADMIN) {
+      throw new GraphQLError(errorMessage);
+    }
+
+    return next();
+  });
+}

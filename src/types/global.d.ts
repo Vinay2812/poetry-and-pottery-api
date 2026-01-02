@@ -165,6 +165,17 @@ declare global {
       | CarePageContent
       | PrivacyPageContent
       | TermsPageContent;
+
+    // ShippingAddress for Order.shipping_address JSON field
+    interface ShippingAddress {
+      name: string;
+      address_line_1: string;
+      address_line_2?: string | null;
+      city: string;
+      state: string;
+      zip: string;
+      contact_number?: string | null;
+    }
   }
 }
 

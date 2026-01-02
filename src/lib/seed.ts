@@ -635,7 +635,17 @@ async function main() {
       ];
 
       const dbAddresses = await prisma.userAddress.findMany({
-        select: { id: true, user_id: true },
+        select: {
+          id: true,
+          user_id: true,
+          name: true,
+          address_line_1: true,
+          address_line_2: true,
+          city: true,
+          state: true,
+          zip: true,
+          contact_number: true,
+        },
       });
 
       const purchasedItemSet = new Set<string>(); // orderId::productId
@@ -667,7 +677,15 @@ async function main() {
             cancelled_at: status === OrderStatus.CANCELLED ? new Date() : null,
             returned_at: status === OrderStatus.RETURNED ? new Date() : null,
             refunded_at: status === OrderStatus.REFUNDED ? new Date() : null,
-            shipping_address: { userAddressId: addr.id },
+            shipping_address: {
+              name: addr.name,
+              address_line_1: addr.address_line_1,
+              address_line_2: addr.address_line_2,
+              city: addr.city,
+              state: addr.state,
+              zip: addr.zip,
+              contact_number: addr.contact_number,
+            },
           },
         });
 

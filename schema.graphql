@@ -3,6 +3,34 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+type AboutPageContent {
+  processSteps: [AboutProcessStep!]!
+  storyContent: [String!]!
+  storySubtitle: String!
+  storyTitle: String!
+  team: [AboutTeamMember!]!
+  values: [AboutValue!]!
+}
+
+type AboutProcessStep {
+  description: String!
+  step: String!
+  title: String!
+}
+
+type AboutTeamMember {
+  bio: String!
+  image: String!
+  name: String!
+  role: String!
+}
+
+type AboutValue {
+  description: String!
+  icon: String!
+  title: String!
+}
+
 input AddToCartInput {
   product_id: Int!
   quantity: Int = 1
@@ -19,9 +47,493 @@ type AddressesResponse {
   total: Int!
 }
 
+type AdminCategoriesResponse {
+  categories: [AdminCategory!]!
+  total: Int!
+}
+
+type AdminCategory {
+  icon: String!
+  name: String!
+  productCount: Int!
+}
+
+type AdminCategoryConfig {
+  icon: String!
+  name: String!
+}
+
+type AdminCategoryMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminContentMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminContentPage {
+  content: JSON!
+  created_at: DateTime!
+  id: Int!
+  is_active: Boolean!
+  slug: String!
+  title: String!
+  updated_at: DateTime!
+}
+
+type AdminContentPageListItem {
+  is_active: Boolean!
+  slug: String!
+  title: String!
+  updated_at: DateTime!
+}
+
+type AdminEvent {
+  _count: AdminEventCount!
+  available_seats: Int!
+  created_at: DateTime!
+  description: String!
+  ends_at: DateTime!
+  id: String!
+  image: String!
+  instructor: String!
+  level: EventLevel!
+  location: String!
+  price: Float!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus!
+  title: String!
+  total_seats: Int!
+}
+
+type AdminEventCount {
+  event_registrations: Int!
+  reviews: Int!
+}
+
+type AdminEventDetail {
+  _count: AdminEventCount!
+  available_seats: Int!
+  created_at: DateTime!
+  description: String!
+  ends_at: DateTime!
+  full_location: String!
+  gallery: [String!]!
+  highlights: [String!]!
+  id: String!
+  image: String!
+  includes: [String!]!
+  instructor: String!
+  level: EventLevel!
+  location: String!
+  price: Float!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus!
+  title: String!
+  total_seats: Int!
+  updated_at: DateTime!
+}
+
+type AdminEventMutationResponse {
+  error: String
+  eventId: String
+  success: Boolean!
+}
+
+type AdminEventRegistration {
+  approved_at: DateTime
+  cancelled_at: DateTime
+  confirmed_at: DateTime
+  created_at: DateTime!
+  discount: Float!
+  id: String!
+  paid_at: DateTime
+  price: Float!
+  request_at: DateTime
+  seats_reserved: Int!
+  status: EventRegistrationStatus!
+  user: AdminRegistrationUser!
+}
+
+type AdminEventRegistrationsResponse {
+  registrations: [AdminEventRegistration!]!
+  statusCounts: AdminRegistrationStatusCount!
+  total: Int!
+}
+
+type AdminEventReview {
+  created_at: DateTime!
+  id: Int!
+  image_urls: [String!]!
+  rating: Int!
+  review: String
+  user: AdminEventReviewUser!
+}
+
+type AdminEventReviewUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+}
+
+type AdminEventReviewsResponse {
+  averageRating: Float!
+  reviews: [AdminEventReview!]!
+  total: Int!
+}
+
+input AdminEventsFilterInput {
+  level: EventLevel
+  limit: Int = 20
+  page: Int = 1
+  search: String
+  status: EventStatus
+  upcoming: Boolean
+}
+
+type AdminEventsResponse {
+  events: [AdminEvent!]!
+  limit: Int!
+  page: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+type AdminIconOption {
+  label: String!
+  value: String!
+}
+
+type AdminLevelOption {
+  label: String!
+  value: String!
+}
+
+type AdminMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminOrderMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminProduct {
+  _count: AdminProductCount!
+  available_quantity: Int!
+  categories: [String!]!
+  color_code: String!
+  color_name: String!
+  created_at: DateTime!
+  description: String
+  id: Int!
+  image_urls: [String!]!
+  is_active: Boolean!
+  material: String!
+  name: String!
+  price: Float!
+  slug: String!
+  total_quantity: Int!
+}
+
+type AdminProductCount {
+  carts: Int!
+  reviews: Int!
+  wishlists: Int!
+}
+
+type AdminProductDetail {
+  _count: AdminProductDetailCount!
+  available_quantity: Int!
+  categories: [String!]!
+  color_code: String!
+  color_name: String!
+  created_at: DateTime!
+  description: String
+  id: Int!
+  image_urls: [String!]!
+  instructions: [String!]!
+  is_active: Boolean!
+  material: String!
+  name: String!
+  price: Float!
+  slug: String!
+  total_quantity: Int!
+  updated_at: DateTime!
+}
+
+type AdminProductDetailCount {
+  carts: Int!
+  purchased_products: Int!
+  reviews: Int!
+  wishlists: Int!
+}
+
+type AdminProductMutationResponse {
+  error: String
+  productId: Int
+  success: Boolean!
+}
+
+type AdminProductReview {
+  created_at: DateTime!
+  id: Int!
+  image_urls: [String!]!
+  rating: Int!
+  review: String
+  user: AdminProductReviewUser!
+}
+
+type AdminProductReviewUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+}
+
+type AdminProductReviewsResponse {
+  averageRating: Float!
+  reviews: [AdminProductReview!]!
+  total: Int!
+}
+
+input AdminProductsFilterInput {
+  category: String
+  isActive: Boolean
+  limit: Int = 20
+  lowStock: Boolean
+  page: Int = 1
+  search: String
+}
+
+type AdminProductsResponse {
+  limit: Int!
+  page: Int!
+  products: [AdminProduct!]!
+  total: Int!
+  totalPages: Int!
+}
+
+type AdminRegistrationMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminRegistrationStatusCount {
+  APPROVED: Int!
+  CANCELLED: Int!
+  CONFIRMED: Int!
+  PAID: Int!
+  PENDING: Int!
+  REJECTED: Int!
+}
+
+type AdminRegistrationUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+  phone: String
+}
+
+type AdminSettingsMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminSiteSetting {
+  id: Int!
+  key: String!
+  updated_at: DateTime!
+  value: JSON!
+}
+
+type AdminStatusOption {
+  label: String!
+  value: String!
+}
+
+type AdminUser {
+  _count: AdminUserCount!
+  auth_id: String!
+  created_at: DateTime!
+  email: String!
+  id: Int!
+  image: String
+  name: String
+  pendingOrdersCount: Int!
+  pendingRegistrationsCount: Int!
+  phone: String
+  role: UserRole!
+}
+
+type AdminUserCartItem {
+  created_at: DateTime!
+  id: Int!
+  product: AdminUserCartProduct!
+  quantity: Int!
+}
+
+type AdminUserCartProduct {
+  available_quantity: Int!
+  id: Int!
+  image_urls: [String!]!
+  name: String!
+  price: Float!
+  slug: String!
+}
+
+type AdminUserCount {
+  event_registrations: Int!
+  product_orders: Int!
+}
+
+type AdminUserDetail {
+  _count: AdminUserDetailCount!
+  auth_id: String!
+  created_at: DateTime!
+  email: String!
+  id: Int!
+  image: String
+  name: String
+  phone: String
+  role: UserRole!
+  updated_at: DateTime!
+}
+
+type AdminUserDetailCount {
+  carts: Int!
+  event_registrations: Int!
+  product_orders: Int!
+  reviews: Int!
+  wishlists: Int!
+}
+
+type AdminUserMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminUserOrder {
+  approved_at: DateTime
+  cancelled_at: DateTime
+  created_at: DateTime!
+  delivered_at: DateTime
+  discount: Float!
+  id: String!
+  ordered_products: [AdminUserOrderItem!]!
+  paid_at: DateTime
+  refunded_at: DateTime
+  request_at: DateTime
+  returned_at: DateTime
+  shipped_at: DateTime
+  shipping_fee: Float!
+  status: String!
+  subtotal: Float!
+  total: Float!
+}
+
+type AdminUserOrderItem {
+  discount: Float!
+  id: Int!
+  price: Float!
+  product: AdminUserOrderProduct!
+  quantity: Int!
+}
+
+type AdminUserOrderProduct {
+  id: Int!
+  image_urls: [String!]!
+  name: String!
+  slug: String!
+}
+
+type AdminUserRegistration {
+  approved_at: DateTime
+  cancelled_at: DateTime
+  confirmed_at: DateTime
+  created_at: DateTime!
+  discount: Float!
+  event: AdminUserRegistrationEvent!
+  id: String!
+  paid_at: DateTime
+  price: Float!
+  request_at: DateTime
+  seats_reserved: Int!
+  status: String!
+}
+
+type AdminUserRegistrationEvent {
+  ends_at: DateTime!
+  id: String!
+  image: String!
+  location: String!
+  price: Float!
+  slug: String!
+  starts_at: DateTime!
+  title: String!
+}
+
+type AdminUserWishlistItem {
+  created_at: DateTime!
+  id: Int!
+  product: AdminUserWishlistProduct!
+}
+
+type AdminUserWishlistProduct {
+  available_quantity: Int!
+  id: Int!
+  image_urls: [String!]!
+  name: String!
+  price: Float!
+  slug: String!
+}
+
+type AdminUserWishlistResponse {
+  data: [AdminUserWishlistItem!]!
+  page: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+input AdminUsersFilterInput {
+  limit: Int = 20
+  page: Int = 1
+  role: UserRole
+  search: String
+  sort: String
+}
+
+type AdminUsersResponse {
+  limit: Int!
+  page: Int!
+  total: Int!
+  totalPages: Int!
+  users: [AdminUser!]!
+}
+
 type CancelRegistrationResponse {
   error: String
   success: Boolean!
+}
+
+type CarePageContent {
+  avoid: [String!]!
+  glazeTypes: [GlazeType!]!
+  safeFor: [String!]!
+  warnings: [CareWarning!]!
+}
+
+type CareWarning {
+  description: String!
+  icon: String!
+  title: String!
 }
 
 type CartItem {
@@ -45,6 +557,13 @@ type CartResponse {
   total: Int!
 }
 
+type ContactInfo {
+  address: String!
+  email: String!
+  hours: String!
+  phone: String!
+}
+
 input CreateAddressInput {
   address_line_1: String!
   address_line_2: String
@@ -56,6 +575,26 @@ input CreateAddressInput {
   zip: String!
 }
 
+input CreateEventInput {
+  available_seats: Int!
+  description: String!
+  ends_at: DateTime!
+  full_location: String!
+  gallery: [String!]
+  highlights: [String!]
+  image: String!
+  includes: [String!]
+  instructor: String!
+  level: EventLevel
+  location: String!
+  price: Float!
+  slug: String!
+  starts_at: DateTime!
+  status: EventStatus
+  title: String!
+  total_seats: Int!
+}
+
 input CreateEventReviewInput {
   eventId: String!
   imageUrls: [String!]
@@ -64,8 +603,24 @@ input CreateEventReviewInput {
 }
 
 input CreateOrderInput {
-  shippingAddress: ShippingAddressInput!
-  shippingFee: Int!
+  shipping_address: ShippingAddressInput!
+  shipping_fee: Int!
+}
+
+input CreateProductInput {
+  available_quantity: Int!
+  categories: [String!]!
+  color_code: String!
+  color_name: String!
+  description: String
+  image_urls: [String!]!
+  instructions: [String!]
+  is_active: Boolean = true
+  material: String!
+  name: String!
+  price: Float!
+  slug: String!
+  total_quantity: Int!
 }
 
 input CreateProductReviewInput {
@@ -79,6 +634,16 @@ type CreateReviewResponse {
   error: String
   review: Review
   success: Boolean!
+}
+
+type DashboardStats {
+  events: EventsStats!
+  newsletter: NewsletterStats!
+  orders: OrdersStats!
+  products: ProductsStats!
+  registrations: RegistrationsStats!
+  revenue: RevenueStats!
+  users: UsersStats!
 }
 
 """
@@ -240,6 +805,40 @@ type EventsResponse {
   total_pages: Int!
 }
 
+type EventsStats {
+  total: Int!
+  upcoming: Int!
+  upcomingIn7Days: Int!
+}
+
+type FAQCategory {
+  faqs: [FAQItem!]!
+  title: String!
+}
+
+type FAQItem {
+  answer: String!
+  question: String!
+}
+
+type FAQPageContent {
+  categories: [FAQCategory!]!
+}
+
+input GetPresignedUploadUrlInput {
+  contentType: String!
+  fileSize: Int!
+  filename: String!
+  folder: String
+}
+
+type GlazeType {
+  care: String!
+  description: String!
+  icon: String!
+  name: String!
+}
+
 input GlobalSearchInput {
   limit: Int = 5
   query: String!
@@ -252,14 +851,59 @@ type GlobalSearchResponse {
   products: [ProductBase!]!
 }
 
+type HeroImages {
+  events: String!
+  home: String!
+  ourStory: String!
+  products: String!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
 
+type LowStockProduct {
+  available_quantity: Int!
+  id: Int!
+  name: String!
+  price: Float!
+  slug: String!
+  total_quantity: Int!
+}
+
 type Mutation {
   addToCart(input: AddToCartInput!): CartMutationResponse!
   addToWishlist(productId: Int!): WishlistMutationResponse!
+  adminAddCategory(icon: String = "tag", name: String!): AdminCategoryMutationResponse!
+  adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
+  adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!
+  adminDeleteCategory(name: String!): AdminCategoryMutationResponse!
+  adminDeleteEvent(id: String!): AdminEventMutationResponse!
+  adminDeleteEventReview(reviewId: Int!): AdminEventMutationResponse!
+  adminDeleteProduct(id: Int!): AdminMutationResponse!
+  adminDeleteProductReview(reviewId: Int!): AdminMutationResponse!
+  adminGetPresignedUploadUrl(input: GetPresignedUploadUrlInput!): PresignedUploadUrlResponse!
+  adminRenameCategory(newName: String!, oldName: String!): AdminCategoryMutationResponse!
+  adminToggleContentPageActive(slug: String!): AdminContentMutationResponse!
+  adminToggleProductActive(id: Int!): AdminMutationResponse!
+  adminUpdateCategoryIcon(category: String!, icon: String!): AdminCategoryMutationResponse!
+  adminUpdateContactInfo(input: UpdateContactInfoInput!): AdminSettingsMutationResponse!
+  adminUpdateContentPage(input: UpdateContentPageInput!, slug: String!): AdminContentMutationResponse!
+  adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
+  adminUpdateEventStatus(id: String!, status: String!): AdminEventMutationResponse!
+  adminUpdateHeroImages(input: UpdateHeroImagesInput!): AdminSettingsMutationResponse!
+  adminUpdateOrderDiscount(discount: Float!, orderId: String!): AdminOrderMutationResponse!
+  adminUpdateOrderItemDiscount(discount: Float!, itemId: Int!): AdminOrderMutationResponse!
+  adminUpdateOrderItemQuantity(itemId: Int!, quantity: Int!): AdminOrderMutationResponse!
+  adminUpdateOrderPrice(orderId: String!, total: Float!): AdminOrderMutationResponse!
+  adminUpdateOrderStatus(orderId: String!, status: String!): AdminOrderMutationResponse!
+  adminUpdateProduct(id: Int!, input: UpdateProductInput!): AdminMutationResponse!
+  adminUpdateRegistrationDetails(input: UpdateRegistrationDetailsInput!, registrationId: String!): AdminRegistrationMutationResponse!
+  adminUpdateRegistrationPrice(price: Float!, registrationId: String!): AdminRegistrationMutationResponse!
+  adminUpdateRegistrationStatus(registrationId: String!, status: String!): AdminRegistrationMutationResponse!
+  adminUpdateSocialLinks(input: UpdateSocialLinksInput!): AdminSettingsMutationResponse!
+  adminUpdateUserRole(role: String!, userId: Int!): AdminUserMutationResponse!
   cancelOrder(orderId: String!): OrderMutationResponse!
   cancelRegistration(registrationId: String!): CancelRegistrationResponse!
   clearCart: Boolean!
@@ -287,9 +931,22 @@ type NewsletterMutationResponse {
   success: Boolean!
 }
 
+type NewsletterStats {
+  newThisMonth: Int!
+  totalSubscribers: Int!
+}
+
 type NewsletterStatus {
   subscribed: Boolean!
   subscribed_at: DateTime
+}
+
+type NewsletterSubscriber {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+  newsletter_subscribed_at: DateTime
 }
 
 type Order {
@@ -365,6 +1022,20 @@ type OrdersResponse {
   total_pages: Int!
 }
 
+type OrdersStats {
+  pending: Int!
+  processing: Int!
+  total: Int!
+}
+
+type PresignedUploadUrlResponse {
+  error: String
+  key: String
+  presignedUrl: String
+  publicUrl: String
+  success: Boolean!
+}
+
 type PriceHistogramBucket {
   count: Int!
   max: Int!
@@ -374,6 +1045,18 @@ type PriceHistogramBucket {
 type PriceRange {
   max: Int!
   min: Int!
+}
+
+type PrivacyPageContent {
+  contactEmail: String!
+  introduction: String!
+  lastUpdated: String!
+  sections: [PrivacySection!]!
+}
+
+type PrivacySection {
+  content: String!
+  title: String!
 }
 
 type ProductBase {
@@ -473,8 +1156,45 @@ type ProductsResponse {
   total_products: Int!
 }
 
+type ProductsStats {
+  lowStock: Int!
+  outOfStock: Int!
+  total: Int!
+}
+
 type Query {
   addressById(id: Int!): UserAddress
+  adminAllCategories: [String!]!
+  adminAllConfiguredCategories: [AdminCategoryConfig!]!
+  adminAllSettings: [AdminSiteSetting!]!
+  adminAvailableIcons: [AdminIconOption!]!
+  adminCategories: AdminCategoriesResponse!
+  adminContactInfo: ContactInfo!
+  adminContentPageBySlug(slug: String!): AdminContentPage
+  adminContentPages: [AdminContentPageListItem!]!
+  adminDashboardStats: DashboardStats!
+  adminEventById(id: String!): AdminEventDetail
+  adminEventLevelOptions: [AdminLevelOption!]!
+  adminEventRegistrations(eventId: String!): AdminEventRegistrationsResponse!
+  adminEventReviews(eventId: String!): AdminEventReviewsResponse!
+  adminEventStatusOptions: [AdminStatusOption!]!
+  adminEvents(filter: AdminEventsFilterInput): AdminEventsResponse!
+  adminHeroImages: HeroImages!
+  adminLowStockProducts(limit: Int = 10): [LowStockProduct!]!
+  adminNewsletterSubscribers(limit: Int = 10): [NewsletterSubscriber!]!
+  adminProductById(id: Int!): AdminProductDetail
+  adminProductReviews(productId: Int!): AdminProductReviewsResponse!
+  adminProducts(filter: AdminProductsFilterInput): AdminProductsResponse!
+  adminRecentOrders(limit: Int = 5): [RecentOrder!]!
+  adminRecentRegistrations(limit: Int = 5): [RecentRegistration!]!
+  adminSocialLinks: SocialLinks!
+  adminUpcomingEvents(limit: Int = 5): [UpcomingEvent!]!
+  adminUserById(id: Int!): AdminUserDetail
+  adminUserCart(userId: Int!): [AdminUserCartItem!]!
+  adminUserOrders(userId: Int!): [AdminUserOrder!]!
+  adminUserRegistrations(userId: Int!): [AdminUserRegistration!]!
+  adminUserWishlist(limit: Int = 10, page: Int = 1, userId: Int!): AdminUserWishlistResponse!
+  adminUsers(filter: AdminUsersFilterInput): AdminUsersResponse!
   bestSellers(limit: Int): [ProductBase!]!
   cart: CartResponse!
   categories: [String!]!
@@ -495,6 +1215,15 @@ type Query {
   productBySlug(slug: String!): ProductDetail
   productReviews(filter: ReviewsFilterInput, productId: Int!): ReviewsResponse!
   products(filter: ProductsFilterInput!): ProductsResponse!
+  publicAboutContent: AboutPageContent
+  publicCareContent: CarePageContent
+  publicContactInfo: ContactInfo!
+  publicFAQContent: FAQPageContent
+  publicHeroImages: HeroImages!
+  publicPrivacyContent: PrivacyPageContent
+  publicShippingContent: ShippingPageContent
+  publicSocialLinks: SocialLinks!
+  publicTermsContent: TermsPageContent
   recommendedProducts(limit: Int): [ProductBase!]!
   registrationById(registrationId: String!): EventRegistration
   relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
@@ -506,6 +1235,38 @@ type Query {
   userRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
   wishlistIds: [Int!]!
+}
+
+type RecentOrder {
+  created_at: DateTime!
+  id: String!
+  status: String!
+  total: Float!
+  user: RecentOrderUser!
+}
+
+type RecentOrderUser {
+  email: String!
+  name: String
+}
+
+type RecentRegistration {
+  created_at: DateTime!
+  event: RecentRegistrationEvent!
+  id: String!
+  price: Float!
+  seats_reserved: Int!
+  status: String!
+  user: RecentRegistrationUser!
+}
+
+type RecentRegistrationEvent {
+  title: String!
+}
+
+type RecentRegistrationUser {
+  email: String!
+  name: String
 }
 
 input RegisterForEventInput {
@@ -562,6 +1323,28 @@ type RegistrationsResponse {
   total_pages: Int!
 }
 
+type RegistrationsStats {
+  pending: Int!
+  total: Int!
+}
+
+type ReturnStep {
+  description: String!
+  step: String!
+  title: String!
+}
+
+type ReturnsPolicy {
+  description: String!
+  icon: String!
+  title: String!
+}
+
+type RevenueStats {
+  totalOrders: Float!
+  totalRegistrations: Float!
+}
+
 type Review {
   created_at: DateTime!
   event_id: String
@@ -608,13 +1391,51 @@ type SearchCounts {
 }
 
 input ShippingAddressInput {
-  addressLine1: String!
-  addressLine2: String
+  address_line_1: String!
+  address_line_2: String
   city: String!
-  contactNumber: String
+  contact_number: String
   name: String!
   state: String!
   zip: String!
+}
+
+type ShippingInfo {
+  content: String!
+  title: String!
+}
+
+type ShippingOption {
+  description: String!
+  icon: String!
+  price: String!
+  title: String!
+}
+
+type ShippingPageContent {
+  returnSteps: [ReturnStep!]!
+  returnsPolicy: [ReturnsPolicy!]!
+  shippingInfo: [ShippingInfo!]!
+  shippingOptions: [ShippingOption!]!
+}
+
+type SocialLinks {
+  facebook: String!
+  instagram: String!
+  pinterest: String!
+  twitter: String!
+}
+
+type TermsPageContent {
+  contactEmail: String!
+  introduction: String!
+  lastUpdated: String!
+  sections: [TermsSection!]!
+}
+
+type TermsSection {
+  content: String!
+  title: String!
 }
 
 """The action performed when toggling wishlist"""
@@ -642,6 +1463,20 @@ type ToggleWishlistResponse {
   success: Boolean!
 }
 
+type UpcomingEvent {
+  _count: UpcomingEventCount!
+  available_seats: Int!
+  id: String!
+  slug: String!
+  starts_at: DateTime!
+  title: String!
+  total_seats: Int!
+}
+
+type UpcomingEventCount {
+  event_registrations: Int!
+}
+
 input UpdateAddressInput {
   address_line_1: String
   address_line_2: String
@@ -656,6 +1491,73 @@ input UpdateAddressInput {
 input UpdateCartQuantityInput {
   product_id: Int!
   quantity: Int!
+}
+
+input UpdateContactInfoInput {
+  address: String
+  email: String
+  hours: String
+  phone: String
+}
+
+input UpdateContentPageInput {
+  content: JSON!
+}
+
+input UpdateEventInput {
+  available_seats: Int
+  description: String
+  ends_at: DateTime
+  full_location: String
+  gallery: [String!]
+  highlights: [String!]
+  image: String
+  includes: [String!]
+  instructor: String
+  level: EventLevel
+  location: String
+  price: Float
+  slug: String
+  starts_at: DateTime
+  status: EventStatus
+  title: String
+  total_seats: Int
+}
+
+input UpdateHeroImagesInput {
+  events: String
+  home: String
+  ourStory: String
+  products: String
+}
+
+input UpdateProductInput {
+  available_quantity: Int
+  categories: [String!]
+  color_code: String
+  color_name: String
+  description: String
+  image_urls: [String!]
+  instructions: [String!]
+  is_active: Boolean
+  material: String
+  name: String
+  price: Float
+  slug: String
+  total_quantity: Int
+}
+
+input UpdateRegistrationDetailsInput {
+  discount: Float!
+  price: Float!
+  seatsReserved: Int!
+}
+
+input UpdateSocialLinksInput {
+  facebook: String
+  instagram: String
+  pinterest: String
+  twitter: String
 }
 
 type UserAddress {
@@ -693,6 +1595,11 @@ type UserResponse {
 enum UserRole {
   ADMIN
   USER
+}
+
+type UsersStats {
+  newThisMonth: Int!
+  total: Int!
 }
 
 input WishlistFilterInput {

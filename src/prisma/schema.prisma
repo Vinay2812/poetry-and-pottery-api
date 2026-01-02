@@ -295,6 +295,7 @@ model ProductOrder {
   returned_at  DateTime?
   refunded_at  DateTime?
 
+  /// [ShippingAddress]
   shipping_address Json
 
   created_at DateTime @default(now())

@@ -32,10 +32,10 @@ export class ShippingAddress {
   name!: string;
 
   @Field(() => String)
-  addressLine1!: string;
+  address_line_1!: string;
 
   @Field(() => String, { nullable: true })
-  addressLine2?: string | null;
+  address_line_2?: string | null;
 
   @Field(() => String)
   city!: string;
@@ -47,7 +47,7 @@ export class ShippingAddress {
   zip!: string;
 
   @Field(() => String, { nullable: true })
-  contactNumber?: string | null;
+  contact_number?: string | null;
 }
 
 @ObjectType()
@@ -191,10 +191,10 @@ export class ShippingAddressInput {
   name!: string;
 
   @Field(() => String)
-  addressLine1!: string;
+  address_line_1!: string;
 
   @Field(() => String, { nullable: true })
-  addressLine2?: string;
+  address_line_2?: string;
 
   @Field(() => String)
   city!: string;
@@ -206,16 +206,16 @@ export class ShippingAddressInput {
   zip!: string;
 
   @Field(() => String, { nullable: true })
-  contactNumber?: string;
+  contact_number?: string;
 }
 
 @InputType()
 export class CreateOrderInput {
   @Field(() => Int)
-  shippingFee!: number;
+  shipping_fee!: number;
 
   @Field(() => ShippingAddressInput)
-  shippingAddress!: ShippingAddressInput;
+  shipping_address!: ShippingAddressInput;
 }
 
 @ObjectType()
