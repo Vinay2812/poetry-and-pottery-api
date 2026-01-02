@@ -66,8 +66,10 @@ class App {
   private async configureMiddleware() {
     this.app.use(
       cors({
-        origin: ORIGINS,
+        origin: ORIGINS.length > 0 ? ORIGINS : true,
         credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        allowedHeaders: ["Content-Type", "Authorization", "Origin", "Accept"],
       }),
     );
     this.app.use(

@@ -290,3 +290,33 @@ export class ProductsResponse {
   @Field(() => ProductsMeta)
   meta!: ProductsMeta;
 }
+
+@ObjectType()
+export class RecommendedProductsResponse {
+  @Field(() => [ProductBase])
+  products!: ProductBase[];
+
+  @Field(() => Int)
+  total!: number;
+
+  @Field(() => Int)
+  page!: number;
+
+  @Field(() => Int)
+  total_pages!: number;
+}
+
+@ObjectType()
+export class BestSellersResponse {
+  @Field(() => [ProductBase])
+  products!: ProductBase[];
+
+  @Field(() => Int)
+  total!: number;
+
+  @Field(() => Int)
+  page!: number;
+
+  @Field(() => Int)
+  total_pages!: number;
+}

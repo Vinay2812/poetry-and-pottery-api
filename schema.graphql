@@ -518,6 +518,13 @@ type AdminUsersResponse {
   users: [AdminUser!]!
 }
 
+type BestSellersResponse {
+  page: Int!
+  products: [ProductBase!]!
+  total: Int!
+  total_pages: Int!
+}
+
 type CancelRegistrationResponse {
   error: String
   success: Boolean!
@@ -1195,7 +1202,7 @@ type Query {
   adminUserRegistrations(userId: Int!): [AdminUserRegistration!]!
   adminUserWishlist(limit: Int = 10, page: Int = 1, userId: Int!): AdminUserWishlistResponse!
   adminUsers(filter: AdminUsersFilterInput): AdminUsersResponse!
-  bestSellers(limit: Int): [ProductBase!]!
+  bestSellers(limit: Int, page: Int): BestSellersResponse!
   cart: CartResponse!
   categories: [String!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
@@ -1204,7 +1211,6 @@ type Query {
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
-  featuredProducts(limit: Int): [ProductBase!]!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
   materials: [String!]!
   newsletterStatus: NewsletterStatus!
@@ -1224,9 +1230,8 @@ type Query {
   publicShippingContent: ShippingPageContent
   publicSocialLinks: SocialLinks!
   publicTermsContent: TermsPageContent
-  recommendedProducts(limit: Int): [ProductBase!]!
+  recommendedProducts(limit: Int, page: Int, productId: Int): RecommendedProductsResponse!
   registrationById(registrationId: String!): EventRegistration
-  relatedProducts(limit: Int, productId: Int!): [ProductBase!]!
   upcomingEvents(filter: EventsFilterInput): EventsResponse!
   upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
@@ -1267,6 +1272,13 @@ type RecentRegistrationEvent {
 type RecentRegistrationUser {
   email: String!
   name: String
+}
+
+type RecommendedProductsResponse {
+  page: Int!
+  products: [ProductBase!]!
+  total: Int!
+  total_pages: Int!
 }
 
 input RegisterForEventInput {
