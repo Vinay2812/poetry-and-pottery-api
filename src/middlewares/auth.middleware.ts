@@ -26,9 +26,15 @@ const EVENT_NON_AUTH_RESOLVERS: string[] = [
   "EventWithUserContext",
 ];
 
+const REVIEW_NON_AUTH_RESOLVERS: string[] = [
+  "ProductReviews",
+  "EventReviews",
+];
+
 const NON_AUTH_RESOLVERS: string[] = [
   ...PRODUCT_NON_AUTH_RESOLVERS,
   ...EVENT_NON_AUTH_RESOLVERS,
+  ...REVIEW_NON_AUTH_RESOLVERS,
   "IntrospectionQuery",
 ];
 

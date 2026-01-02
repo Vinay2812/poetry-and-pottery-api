@@ -34,15 +34,40 @@ type CartResponse {
   total: Int!
 }
 
+input CreateEventReviewInput {
+  eventId: String!
+  imageUrls: [String!]
+  rating: Int!
+  review: String
+}
+
 input CreateOrderInput {
   shippingAddress: ShippingAddressInput!
   shippingFee: Int!
+}
+
+input CreateProductReviewInput {
+  imageUrls: [String!]
+  productId: Int!
+  rating: Int!
+  review: String
+}
+
+type CreateReviewResponse {
+  error: String
+  review: Review
+  success: Boolean!
 }
 
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+type DeleteReviewResponse {
+  error: String
+  success: Boolean!
+}
 
 type EventBase {
   available_seats: Int!
@@ -204,11 +229,15 @@ type Mutation {
   cancelOrder(orderId: String!): OrderMutationResponse!
   cancelRegistration(registrationId: String!): CancelRegistrationResponse!
   clearCart: Boolean!
+  createEventReview(input: CreateEventReviewInput!): CreateReviewResponse!
   createOrder(input: CreateOrderInput!): OrderMutationResponse!
+  createProductReview(input: CreateProductReviewInput!): CreateReviewResponse!
+  deleteReview(reviewId: Int!): DeleteReviewResponse!
   moveToCart(productId: Int!): Boolean!
   registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
   removeFromCart(productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
+  toggleReviewLike(reviewId: Int!): ToggleReviewLikeResponse!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
   updateCartQuantity(input: UpdateCartQuantityInput!): CartMutationResponse!
 }
@@ -401,6 +430,7 @@ type Query {
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   eventById(id: String!): EventDetail
   eventBySlug(slug: String!): EventDetail
+  eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
   featuredProducts(limit: Int): [ProductBase!]!
@@ -410,6 +440,7 @@ type Query {
   pastEvents(filter: EventsFilterInput): EventsResponse!
   productById(id: Int!): ProductDetail
   productBySlug(slug: String!): ProductDetail
+  productReviews(filter: ReviewsFilterInput, productId: Int!): ReviewsResponse!
   products(filter: ProductsFilterInput!): ProductsResponse!
   recommendedProducts(limit: Int): [ProductBase!]!
   registrationById(registrationId: String!): EventRegistration
@@ -477,6 +508,22 @@ type RegistrationsResponse {
   total_pages: Int!
 }
 
+type Review {
+  created_at: DateTime!
+  event_id: String
+  id: Int!
+  image_urls: [String!]!
+  is_liked_by_current_user: Boolean!
+  likes: [ReviewLike!]!
+  likes_count: Int!
+  product_id: Int
+  rating: Int!
+  review: String
+  updated_at: DateTime!
+  user: ReviewUser!
+  user_id: Int!
+}
+
 type ReviewLike {
   id: Int!
   user_id: Int!
@@ -486,6 +533,18 @@ type ReviewUser {
   id: Int!
   image: String
   name: String
+}
+
+input ReviewsFilterInput {
+  limit: Int = 10
+  page: Int = 1
+}
+
+type ReviewsResponse {
+  data: [Review!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
 }
 
 input ShippingAddressInput {
@@ -502,6 +561,19 @@ input ShippingAddressInput {
 enum ToggleAction {
   ADDED
   REMOVED
+}
+
+"""The action taken when toggling a review like"""
+enum ToggleLikeAction {
+  LIKED
+  UNLIKED
+}
+
+type ToggleReviewLikeResponse {
+  action: ToggleLikeAction
+  error: String
+  likes_count: Int
+  success: Boolean!
 }
 
 type ToggleWishlistResponse {

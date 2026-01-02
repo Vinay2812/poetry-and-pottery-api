@@ -4,3 +4,4 @@ export * from "./cart/cart.resolver";
 export * from "./wishlist/wishlist.resolver";
 export * from "./orders/orders.resolver";
 export * from "./events/events.resolver";
+export * from "./reviews/reviews.resolver";

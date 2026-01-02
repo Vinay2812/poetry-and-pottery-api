@@ -36,3 +36,10 @@ GEMINI.md
 
 /generated/prisma
 /prisma/generated
+
+# markdown files
+*.md
+*.MD
+
+.cursor/
+prompt.txt
