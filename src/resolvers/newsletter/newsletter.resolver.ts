@@ -6,7 +6,10 @@ import { authRequired } from "@/middlewares/auth.middleware";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
-import { NewsletterMutationResponse, NewsletterStatus } from "./newsletter.type";
+import {
+  NewsletterMutationResponse,
+  NewsletterStatus,
+} from "./newsletter.type";
 
 function getUserId(ctx: Context): number {
   const userId = ctx.user?.dbUserId;

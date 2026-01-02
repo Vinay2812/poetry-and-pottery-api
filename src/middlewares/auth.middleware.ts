@@ -26,10 +26,7 @@ const EVENT_NON_AUTH_RESOLVERS: string[] = [
   "EventWithUserContext",
 ];
 
-const REVIEW_NON_AUTH_RESOLVERS: string[] = [
-  "ProductReviews",
-  "EventReviews",
-];
+const REVIEW_NON_AUTH_RESOLVERS: string[] = ["ProductReviews", "EventReviews"];
 
 const SEARCH_NON_AUTH_RESOLVERS: string[] = ["GlobalSearch"];
 
