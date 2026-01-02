@@ -5,3 +5,6 @@ export * from "./wishlist/wishlist.resolver";
 export * from "./orders/orders.resolver";
 export * from "./events/events.resolver";
 export * from "./reviews/reviews.resolver";
+export * from "./address/address.resolver";
+export * from "./newsletter/newsletter.resolver";
+export * from "./search/search.resolver";

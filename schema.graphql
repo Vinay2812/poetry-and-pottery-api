@@ -8,6 +8,17 @@ input AddToCartInput {
   quantity: Int = 1
 }
 
+type AddressMutationResponse {
+  address: UserAddress
+  error: String
+  success: Boolean!
+}
+
+type AddressesResponse {
+  addresses: [UserAddress!]!
+  total: Int!
+}
+
 type CancelRegistrationResponse {
   error: String
   success: Boolean!
@@ -32,6 +43,17 @@ type CartResponse {
   items: [CartItem!]!
   subtotal: Int!
   total: Int!
+}
+
+input CreateAddressInput {
+  address_line_1: String!
+  address_line_2: String
+  city: String!
+  contact_number: String
+  landmark: String
+  name: String!
+  state: String!
+  zip: String!
 }
 
 input CreateEventReviewInput {
@@ -218,6 +240,18 @@ type EventsResponse {
   total_pages: Int!
 }
 
+input GlobalSearchInput {
+  limit: Int = 5
+  query: String!
+}
+
+type GlobalSearchResponse {
+  counts: SearchCounts!
+  events: [EventBase!]!
+  orders: [Order!]!
+  products: [ProductBase!]!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -229,17 +263,33 @@ type Mutation {
   cancelOrder(orderId: String!): OrderMutationResponse!
   cancelRegistration(registrationId: String!): CancelRegistrationResponse!
   clearCart: Boolean!
+  createAddress(input: CreateAddressInput!): AddressMutationResponse!
   createEventReview(input: CreateEventReviewInput!): CreateReviewResponse!
   createOrder(input: CreateOrderInput!): OrderMutationResponse!
   createProductReview(input: CreateProductReviewInput!): CreateReviewResponse!
+  deleteAddress(id: Int!): AddressMutationResponse!
   deleteReview(reviewId: Int!): DeleteReviewResponse!
   moveToCart(productId: Int!): Boolean!
   registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
   removeFromCart(productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
+  subscribeToNewsletter: NewsletterMutationResponse!
   toggleReviewLike(reviewId: Int!): ToggleReviewLikeResponse!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
+  unsubscribeFromNewsletter: NewsletterMutationResponse!
+  updateAddress(id: Int!, input: UpdateAddressInput!): AddressMutationResponse!
   updateCartQuantity(input: UpdateCartQuantityInput!): CartMutationResponse!
+}
+
+type NewsletterMutationResponse {
+  error: String
+  status: NewsletterStatus
+  success: Boolean!
+}
+
+type NewsletterStatus {
+  subscribed: Boolean!
+  subscribed_at: DateTime
 }
 
 type Order {
@@ -424,6 +474,7 @@ type ProductsResponse {
 }
 
 type Query {
+  addressById(id: Int!): UserAddress
   bestSellers(limit: Int): [ProductBase!]!
   cart: CartResponse!
   categories: [String!]!
@@ -434,7 +485,9 @@ type Query {
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
   featuredProducts(limit: Int): [ProductBase!]!
+  globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
   materials: [String!]!
+  newsletterStatus: NewsletterStatus!
   order(id: String!): Order
   orders(filter: OrdersFilterInput): OrdersResponse!
   pastEvents(filter: EventsFilterInput): EventsResponse!
@@ -448,6 +501,7 @@ type Query {
   upcomingEvents(filter: EventsFilterInput): EventsResponse!
   upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
+  userAddresses: AddressesResponse!
   userCounts: UserCounts!
   userRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
@@ -547,6 +601,12 @@ type ReviewsResponse {
   total_pages: Int!
 }
 
+type SearchCounts {
+  events: Int!
+  orders: Int!
+  products: Int!
+}
+
 input ShippingAddressInput {
   addressLine1: String!
   addressLine2: String
@@ -582,9 +642,33 @@ type ToggleWishlistResponse {
   success: Boolean!
 }
 
+input UpdateAddressInput {
+  address_line_1: String
+  address_line_2: String
+  city: String
+  contact_number: String
+  landmark: String
+  name: String
+  state: String
+  zip: String
+}
+
 input UpdateCartQuantityInput {
   product_id: Int!
   quantity: Int!
+}
+
+type UserAddress {
+  address_line_1: String!
+  address_line_2: String
+  city: String!
+  contact_number: String
+  id: Int!
+  landmark: String
+  name: String!
+  state: String!
+  user_id: Int!
+  zip: String!
 }
 
 type UserCounts {

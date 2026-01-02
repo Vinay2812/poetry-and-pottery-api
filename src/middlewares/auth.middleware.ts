@@ -31,10 +31,13 @@ const REVIEW_NON_AUTH_RESOLVERS: string[] = [
   "EventReviews",
 ];
 
+const SEARCH_NON_AUTH_RESOLVERS: string[] = ["GlobalSearch"];
+
 const NON_AUTH_RESOLVERS: string[] = [
   ...PRODUCT_NON_AUTH_RESOLVERS,
   ...EVENT_NON_AUTH_RESOLVERS,
   ...REVIEW_NON_AUTH_RESOLVERS,
+  ...SEARCH_NON_AUTH_RESOLVERS,
   "IntrospectionQuery",
 ];
 
