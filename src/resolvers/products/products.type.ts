@@ -10,6 +10,7 @@ import {
 export enum ProductOrderBy {
   FEATURED = "featured",
   NEW = "new",
+  BEST_SELLERS = "best_sellers",
   PRICE_LOW_TO_HIGH = "price_low_to_high",
   PRICE_HIGH_TO_LOW = "price_high_to_low",
   RATING_HIGH_TO_LOW = "rating_high_to_low",

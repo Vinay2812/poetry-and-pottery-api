@@ -1107,6 +1107,7 @@ type ProductDetail {
 
 """The order by which the products should be sorted"""
 enum ProductOrderBy {
+  BEST_SELLERS
   FEATURED
   NEW
   PRICE_HIGH_TO_LOW

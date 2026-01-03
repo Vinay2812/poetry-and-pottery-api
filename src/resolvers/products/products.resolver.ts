@@ -26,6 +26,8 @@ function getOrderBy(orderBy?: ProductOrderBy) {
     case ProductOrderBy.PRICE_HIGH_TO_LOW:
       return { price: "desc" as const };
     case ProductOrderBy.FEATURED:
+    case ProductOrderBy.BEST_SELLERS:
+      return { purchased_products: { _count: "desc" as const } };
     default:
       return { created_at: "desc" as const };
   }
@@ -86,6 +88,8 @@ export class ProductsResolver {
       const limit = filter.limit ?? 12;
       const page = filter.page ?? 1;
       const offset = (page - 1) * limit;
+      const isFeaturedSort =
+        filter.order_by === ProductOrderBy.FEATURED || !filter.order_by;
 
       const priceFilter =
         filter.min_price !== undefined || filter.max_price !== undefined
@@ -126,26 +130,115 @@ export class ProductsResolver {
       };
 
       let userWishlistIds: Set<number> | undefined;
+      let userPreferredCategories: string[] = [];
+
       if (userId) {
-        const wishlistItems = await prisma.wishlist.findMany({
-          where: { user_id: userId },
-          select: { product_id: true },
-        });
+        // Fetch user preferences for featured sorting and wishlist IDs in parallel
+        const [wishlistItems, cartItems, orderItems] = await Promise.all([
+          prisma.wishlist.findMany({
+            where: { user_id: userId },
+            select: {
+              product_id: true,
+              product: {
+                include: { product_categories: { select: { category: true } } },
+              },
+            },
+          }),
+          prisma.cart.findMany({
+            where: { user_id: userId },
+            select: {
+              product: {
+                include: { product_categories: { select: { category: true } } },
+              },
+            },
+          }),
+          prisma.purchasedProductItem.findMany({
+            where: { order: { user_id: userId } },
+            select: {
+              product: {
+                include: { product_categories: { select: { category: true } } },
+              },
+            },
+          }),
+        ]);
+
         userWishlistIds = new Set(wishlistItems.map((w) => w.product_id));
+
+        // Extract categories from wishlist, cart, and orders for featured sorting
+        if (isFeaturedSort) {
+          const wishlistCategories = wishlistItems.flatMap((w) =>
+            w.product.product_categories.map((c) => c.category),
+          );
+          const cartCategories = cartItems.flatMap((c) =>
+            c.product.product_categories.map((pc) => pc.category),
+          );
+          const orderCategories = orderItems.flatMap((o) =>
+            o.product.product_categories.map((pc) => pc.category),
+          );
+          userPreferredCategories = [
+            ...new Set([
+              ...wishlistCategories,
+              ...cartCategories,
+              ...orderCategories,
+            ]),
+          ];
+        }
       }
 
-      const [products, totalProducts] = await Promise.all([
-        prisma.product.findMany({
-          where,
-          include: {
-            reviews: { select: { rating: true } },
+      // For featured sorting with user preferences, use a two-phase approach
+      let products;
+      if (isFeaturedSort && userPreferredCategories.length > 0) {
+        // Phase 1: Get products in preferred categories
+        const preferredWhere = {
+          ...where,
+          product_categories: {
+            some: { category: { in: userPreferredCategories } },
           },
+        };
+        const preferredProducts = await prisma.product.findMany({
+          where: preferredWhere,
+          include: { reviews: { select: { rating: true } } },
+          orderBy: { purchased_products: { _count: "desc" } },
+          skip: offset,
+          take: limit,
+        });
+
+        // If we have enough products from preferred categories, use them
+        if (preferredProducts.length >= limit) {
+          products = preferredProducts;
+        } else {
+          // Phase 2: Fill remaining slots with other products
+          const preferredIds = preferredProducts.map((p) => p.id);
+          const remainingLimit = limit - preferredProducts.length;
+          const remainingOffset = Math.max(
+            0,
+            offset - preferredProducts.length,
+          );
+
+          const otherProducts = await prisma.product.findMany({
+            where: {
+              ...where,
+              id: { notIn: preferredIds },
+            },
+            include: { reviews: { select: { rating: true } } },
+            orderBy: { purchased_products: { _count: "desc" } },
+            skip: remainingOffset,
+            take: remainingLimit,
+          });
+          products = [...preferredProducts, ...otherProducts];
+        }
+      } else {
+        // Standard ordering
+        products = await prisma.product.findMany({
+          where,
+          include: { reviews: { select: { rating: true } } },
           orderBy: getOrderBy(filter.order_by),
           skip: offset,
           take: limit,
-        }),
-        prisma.product.count({ where }),
-      ]);
+        });
+      }
+
+      const totalProducts = await prisma.product.count({ where });
 
       // Build where clause for price stats (respects other filters but not price filter)
       const priceStatsWhere = {
