@@ -15,6 +15,8 @@ const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
   "FeaturedProducts",
   "BestSellers",
   "RecommendedProducts",
+  "Categories",
+  "Materials",
 ];
 
 const EVENT_NON_AUTH_RESOLVERS: string[] = [
@@ -30,11 +32,24 @@ const REVIEW_NON_AUTH_RESOLVERS: string[] = ["ProductReviews", "EventReviews"];
 
 const SEARCH_NON_AUTH_RESOLVERS: string[] = ["GlobalSearch"];
 
+const PUBLIC_CONTENT_NON_AUTH_RESOLVERS: string[] = [
+  "PublicAboutContent",
+  "PublicFAQContent",
+  "PublicShippingContent",
+  "PublicCareContent",
+  "PublicPrivacyContent",
+  "PublicTermsContent",
+  "PublicHeroImages",
+  "PublicContactInfo",
+  "PublicSocialLinks",
+];
+
 const NON_AUTH_RESOLVERS: string[] = [
   ...PRODUCT_NON_AUTH_RESOLVERS,
   ...EVENT_NON_AUTH_RESOLVERS,
   ...REVIEW_NON_AUTH_RESOLVERS,
   ...SEARCH_NON_AUTH_RESOLVERS,
+  ...PUBLIC_CONTENT_NON_AUTH_RESOLVERS,
   "IntrospectionQuery",
 ];
 

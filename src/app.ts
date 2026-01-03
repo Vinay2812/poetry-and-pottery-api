@@ -92,7 +92,7 @@ class App {
     );
     this.app.use(compression());
     this.app.use(helmet());
-    this.app.use(logMiddleware);
+    // this.app.use(logMiddleware);
     this.app.use(graphqlUploadExpress());
   }
 

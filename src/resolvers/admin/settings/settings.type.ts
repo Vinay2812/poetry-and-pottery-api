@@ -95,7 +95,11 @@ export class UpdateSocialLinksInput {
 }
 
 // Setting value union type for type safety
-export type SettingValue = HeroImages | ContactInfo | SocialLinks | Record<string, string>;
+export type SettingValue =
+  | HeroImages
+  | ContactInfo
+  | SocialLinks
+  | Record<string, string>;
 
 // Site Setting
 @ObjectType()

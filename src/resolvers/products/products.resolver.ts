@@ -91,8 +91,12 @@ export class ProductsResolver {
         filter.min_price !== undefined || filter.max_price !== undefined
           ? {
               price: {
-                ...(filter.min_price !== undefined && { gte: filter.min_price }),
-                ...(filter.max_price !== undefined && { lte: filter.max_price }),
+                ...(filter.min_price !== undefined && {
+                  gte: filter.min_price,
+                }),
+                ...(filter.max_price !== undefined && {
+                  lte: filter.max_price,
+                }),
               },
             }
           : {};
