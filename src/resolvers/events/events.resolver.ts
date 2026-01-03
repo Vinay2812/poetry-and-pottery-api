@@ -543,7 +543,7 @@ export class EventsResolver {
               select: { event_registrations: true, reviews: true },
             },
           },
-          orderBy: { starts_at: "asc" },
+          orderBy: [{ available_seats: "desc" }, { starts_at: "asc" }],
           skip: (page - 1) * limit,
           take: limit,
         }),
