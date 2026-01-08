@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
+import { logger } from "@/lib/logger";
+
 // Operations to exclude from logging
 const EXCLUDED_OPERATIONS = new Set<string>([]);
 
@@ -27,7 +29,7 @@ export const logMiddleware = (
   res.once("finish", () => {
     // Skip logging for excluded operations
     if (!EXCLUDED_OPERATIONS.has(operation.resolver)) {
-      console.log(message, {
+      logger.info(message, {
         ...operation,
         responseTime: Date.now() - start,
         statusCode: res.statusCode,
