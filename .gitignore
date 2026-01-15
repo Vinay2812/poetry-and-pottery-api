@@ -1,15 +1,7 @@
 node_modules
 # Keep environment variables out of version control
-.env
-.env.development.local
-.local.env
-.dev.env
-.staging.env
-.prod.env
-.env.local
-.env.dev
-.env.production
-.env.docker
+*.env*
+!.env.example
 
 /src/logs
 logs
