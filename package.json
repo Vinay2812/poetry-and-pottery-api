@@ -8,19 +8,23 @@
   "type": "commonjs",
   "main": "src/server.js",
   "scripts": {
-    "build": "tsc",
-    "db:init": "bunx tsx src/lib/seed.ts",
-    "db:reset": "bun prisma:reset && bunx prisma migrate deploy && bun db:init",
-    "dev": "nodemon src/server.ts",
+    "build": "NODE_ENV=local tsc && tsc-alias",
+    "build:prod": "NODE_ENV=production tsc && tsc-alias",
+    "db:init": "NODE_ENV=local bunx tsx src/lib/seed.ts",
+    "db:reset": "NODE_ENV=local bun prisma:reset && bunx prisma migrate deploy && bun db:init",
+    "dev": "NODE_ENV=local nodemon src/server.ts",
+    "dev:prod": "NODE_ENV=production nodemon src/server.ts",
     "husky": "husky",
-    "migration:apply": "bunx prisma migrate deploy",
-    "migration:create": "bunx prisma migrate dev --create-only",
+    "migration:apply": "NODE_ENV=local bunx prisma migrate deploy",
+    "migration:create": "NODE_ENV=local bunx prisma migrate dev --create-only",
     "prepare": "husky",
     "prettier": "prettier --check .",
     "prettier:format": "prettier --write .",
-    "prisma:generate": "bunx prisma generate --sql",
-    "prisma:reset": "bunx prisma migrate reset",
-    "prisma:studio": "bunx prisma studio"
+    "prisma:generate": "NODE_ENV=local bunx prisma generate",
+    "prisma:reset": "NODE_ENV=local bunx prisma migrate reset",
+    "prisma:studio": "NODE_ENV=local bunx prisma studio",
+    "start": "NODE_ENV=local node dist/src/server.js",
+    "start:prod": "NODE_ENV=production node dist/src/server.js"
   },
   "dependencies": {
     "@apollo/server": "^5.2.0",
@@ -67,6 +71,7 @@
     "prisma": "^7.2.0",
     "prisma-json-types-generator": "^4.0.1",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   }

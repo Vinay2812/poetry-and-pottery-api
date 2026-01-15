@@ -6,6 +6,10 @@ node_modules
 .dev.env
 .staging.env
 .prod.env
+.env.local
+.env.dev
+.env.production
+.env.docker
 
 /src/logs
 logs

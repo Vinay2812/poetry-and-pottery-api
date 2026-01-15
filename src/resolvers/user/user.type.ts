@@ -1,6 +1,6 @@
 import { Field, Int, ObjectType, registerEnumType } from "type-graphql";
 
-import { UserRole } from "@/prisma/generated/enums";
+import { UserRole } from "@/prisma/generated/client";
 
 // Define UserRole in type-graphql
 registerEnumType(UserRole, {

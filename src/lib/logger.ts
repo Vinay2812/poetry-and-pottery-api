@@ -10,7 +10,11 @@ export const logger = winston.createLogger({
     winston.format.splat(),
     winston.format.json(),
     ...(ENV === "development" || ENV === "local"
-      ? [winston.format.prettyPrint()]
+      ? [
+          winston.format.prettyPrint({
+            colorize: true,
+          }),
+        ]
       : []),
   ),
   transports: [

@@ -1,10 +1,11 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+export const ENV = process.env["NODE_ENV"] || "local"; // Passed via command line
+
+const envFile = `.env.${ENV}`;
+dotenv.config({ path: envFile });
 
 export const PORT = process.env["PORT"] || 3000;
-
-export const ENV = process.env["NODE_ENV"] || "local";
 
 export const DATABASE_URL = process.env["DATABASE_URL"];
 if (!DATABASE_URL) {

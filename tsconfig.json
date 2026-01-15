@@ -27,13 +27,12 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "importHelpers": true,
-    "baseUrl": "src",
     "jsx": "react",
     "paths": {
-      "@/*": ["*"],
-      "@middlewares/*": ["middlewares/*"],
-      "@utils/*": ["utils/*"],
-      "@resolvers/*": ["resolvers/*"]
+      "@/*": ["./src/*"],
+      "@middlewares/*": ["./src/middlewares/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@resolvers/*": ["./src/resolvers/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.json", ".env", "src/**/*.tsx"],
