@@ -56,6 +56,7 @@ class App {
 
     const server = new ApolloServer<Context>({
       schema,
+      introspection: true,
     });
 
     await server.start();
