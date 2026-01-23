@@ -1,10 +1,22 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 
-export const errorMiddleware = (err: Error, req: Request, res: Response) => {
-  console.error(err);
-  res.status(500).json({
-    status: "error",
-    success: false,
-    message: "Internal server error",
+import { logger } from "@/lib/logger";
+
+export const errorMiddleware = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  logger.error("[Error Middleware] Error occurred", {
+    message: err.message,
+    stack: err.stack,
+    statusCode: res.statusCode,
+    request: {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+    },
   });
+  next(err);
 };
