@@ -9,13 +9,9 @@ export const logger = winston.createLogger({
     }),
     winston.format.splat(),
     winston.format.json(),
-    ...(ENV === "development" || ENV === "local"
-      ? [
-          winston.format.prettyPrint({
-            colorize: true,
-          }),
-        ]
-      : []),
+    winston.format.prettyPrint({
+      colorize: true,
+    }),
   ),
   transports: [
     new winston.transports.Console({
