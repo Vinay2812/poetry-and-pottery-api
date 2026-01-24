@@ -67,16 +67,14 @@ export const authMiddleWare = async (
 
   const requiredAuth = !NON_AUTH_RESOLVERS.includes(operationName);
 
-  if (requiredAuth) {
-    const { isAuthenticated, sessionClaims, userId } = getAuth(req);
+  const { isAuthenticated, sessionClaims, userId } = getAuth(req);
+  const { dbUserId, role } = sessionClaims || {};
 
-    if (!isAuthenticated) {
-      throw new GraphQLError("User is not authenticated");
-    }
+  if (requiredAuth && !isAuthenticated) {
+    throw new GraphQLError("User is not authenticated");
+  }
 
-    const { dbUserId, role } = sessionClaims;
-
-    // If not exists, create a new user
+  if (isAuthenticated) {
     if (!dbUserId) {
       const clerkUser = await clerkClient.users.getUser(userId);
       if (!clerkUser) {
