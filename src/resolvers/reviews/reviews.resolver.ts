@@ -69,6 +69,35 @@ function mapReview(
 
 @Resolver()
 export class ReviewsResolver {
+  @Query(() => [Review])
+  async featuredReviews(
+    @Arg("limit", () => Int, { nullable: true, defaultValue: 10 })
+    limit: number,
+  ): Promise<Review[]> {
+    const reviews = await prisma.review.findMany({
+      where: {
+        rating: { gte: 4 },
+        review: { not: null },
+        product_id: { not: null },
+      },
+      distinct: ["user_id"],
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        likes: true,
+      },
+      orderBy: [{ rating: "desc" }, { created_at: "desc" }],
+      take: limit,
+    });
+
+    return reviews.map((review) => mapReview(review));
+  }
+
   @Query(() => ReviewsResponse)
   async productReviews(
     @Arg("productId", () => Int) productId: number,

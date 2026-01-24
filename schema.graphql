@@ -564,6 +564,11 @@ type CartResponse {
   total: Int!
 }
 
+type CategoryWithImage {
+  image_url: String
+  name: String!
+}
+
 type ContactInfo {
   address: String!
   email: String!
@@ -1206,12 +1211,14 @@ type Query {
   bestSellers(limit: Int, page: Int): BestSellersResponse!
   cart: CartResponse!
   categories: [String!]!
+  categoriesWithImages: [CategoryWithImage!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   eventById(id: String!): EventDetail
   eventBySlug(slug: String!): EventDetail
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
+  featuredReviews(limit: Int = 10): [Review!]!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
   materials: [String!]!
   newsletterStatus: NewsletterStatus!

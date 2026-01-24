@@ -6,6 +6,7 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
   BestSellersResponse,
+  CategoryWithImage,
   PriceHistogramBucket,
   ProductBase,
   ProductDetail,
@@ -694,6 +695,37 @@ export class ProductsResolver {
       });
 
       return categoryCounts.map((c) => c.category);
+    });
+  }
+
+  @Query(() => [CategoryWithImage])
+  async categoriesWithImages(): Promise<CategoryWithImage[]> {
+    return tryCatchAsync(async () => {
+      const categoryCounts = await prisma.productCategory.groupBy({
+        by: ["category"],
+        _count: { product_id: true },
+        orderBy: { _count: { product_id: "desc" } },
+      });
+
+      const categories = await Promise.all(
+        categoryCounts.map(async (c) => {
+          const productCategory = await prisma.productCategory.findFirst({
+            where: { category: c.category },
+            include: {
+              product: {
+                select: { image_urls: true },
+              },
+            },
+          });
+
+          return {
+            name: c.category,
+            image_url: productCategory?.product?.image_urls?.[0] ?? null,
+          };
+        }),
+      );
+
+      return categories;
     });
   }
 
