@@ -17,6 +17,8 @@ const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
   "RecommendedProducts",
   "Categories",
   "Materials",
+  "CategoriesWithImages",
+  "FeaturedReviews",
 ];
 
 const EVENT_NON_AUTH_RESOLVERS: string[] = [
