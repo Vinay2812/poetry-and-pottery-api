@@ -107,6 +107,7 @@ export class SearchResolver {
               reviews_count: reviewsCount,
               avg_rating: avgRating,
               in_wishlist: false,
+              is_active: product.is_active,
             };
           }),
         );
@@ -277,6 +278,7 @@ export class SearchResolver {
                     reviews_count: reviewsCount,
                     avg_rating: avgRating,
                     in_wishlist: false,
+                    is_active: item.product.is_active,
                   },
                 };
               }),

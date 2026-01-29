@@ -33,7 +33,19 @@ function mapToProductBase(product: {
   available_quantity: number;
   color_code: string;
   color_name: string;
+  is_active: boolean;
   reviews?: { rating: number }[];
+  collection?: {
+    id: number;
+    slug: string;
+    name: string;
+    description: string | null;
+    image_url: string | null;
+    starts_at: Date | null;
+    ends_at: Date | null;
+    created_at: Date;
+    updated_at: Date;
+  } | null;
 }) {
   const reviews = product.reviews ?? [];
   const reviewsCount = reviews.length;
@@ -56,6 +68,21 @@ function mapToProductBase(product: {
     reviews_count: reviewsCount,
     avg_rating: avgRating,
     in_wishlist: false,
+    is_active: product.is_active,
+    collection: product.collection
+      ? {
+          id: product.collection.id,
+          slug: product.collection.slug,
+          name: product.collection.name,
+          description: product.collection.description,
+          image_url: product.collection.image_url,
+          starts_at: product.collection.starts_at,
+          ends_at: product.collection.ends_at,
+          created_at: product.collection.created_at,
+          updated_at: product.collection.updated_at,
+          products_count: 0,
+        }
+      : null,
   };
 }
 
@@ -78,7 +105,19 @@ function mapCartItem(
       available_quantity: number;
       color_code: string;
       color_name: string;
+      is_active: boolean;
       reviews?: { rating: number }[];
+      collection?: {
+        id: number;
+        slug: string;
+        name: string;
+        description: string | null;
+        image_url: string | null;
+        starts_at: Date | null;
+        ends_at: Date | null;
+        created_at: Date;
+        updated_at: Date;
+      } | null;
     };
   },
   userWishlistIds?: Set<number>,
@@ -114,6 +153,7 @@ export class CartResolver {
             product: {
               include: {
                 reviews: { select: { rating: true } },
+                collection: true,
               },
             },
           },
@@ -167,6 +207,7 @@ export class CartResolver {
           product: {
             include: {
               reviews: { select: { rating: true } },
+              collection: true,
             },
           },
         },
@@ -226,6 +267,7 @@ export class CartResolver {
           product: {
             include: {
               reviews: { select: { rating: true } },
+              collection: true,
             },
           },
         },

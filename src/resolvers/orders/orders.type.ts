@@ -211,6 +211,9 @@ export class ShippingAddressInput {
 
 @InputType()
 export class CreateOrderInput {
+  @Field(() => [Int])
+  product_ids!: number[];
+
   @Field(() => Int)
   shipping_fee!: number;
 

@@ -569,6 +569,19 @@ type CategoryWithImage {
   name: String!
 }
 
+type CollectionBase {
+  created_at: DateTime!
+  description: String
+  ends_at: DateTime
+  id: Int!
+  image_url: String
+  name: String!
+  products_count: Int!
+  slug: String!
+  starts_at: DateTime
+  updated_at: DateTime!
+}
+
 type ContactInfo {
   address: String!
   email: String!
@@ -615,6 +628,7 @@ input CreateEventReviewInput {
 }
 
 input CreateOrderInput {
+  product_ids: [Int!]!
   shipping_address: ShippingAddressInput!
   shipping_fee: Int!
 }
@@ -1074,11 +1088,13 @@ type PrivacySection {
 type ProductBase {
   available_quantity: Int!
   avg_rating: Int!
+  collection: CollectionBase
   color_code: String!
   color_name: String!
   id: Int!
   image_urls: [String!]!
   in_wishlist: Boolean!
+  is_active: Boolean!
   material: String!
   name: String!
   price: Int!
@@ -1091,6 +1107,7 @@ type ProductDetail {
   available_quantity: Int!
   avg_rating: Int!
   categories: [String!]!
+  collection: CollectionBase
   color_code: String!
   color_name: String!
   created_at: DateTime!
@@ -1133,7 +1150,9 @@ type ProductReview {
 }
 
 type ProductsFilter {
+  archive: Boolean
   categories: [String!]
+  collection_ids: [Int!]
   limit: Int
   materials: [String!]
   max_price: Int
@@ -1144,7 +1163,9 @@ type ProductsFilter {
 }
 
 input ProductsFilterInput {
+  archive: Boolean
   categories: [String!]
+  collection_ids: [Int!]
   limit: Int
   materials: [String!]
   max_price: Int
@@ -1156,6 +1177,7 @@ input ProductsFilterInput {
 
 type ProductsMeta {
   categories: [String!]!
+  collections: [CollectionBase!]!
   materials: [String!]!
   price_histogram: [PriceHistogramBucket!]!
   price_range: PriceRange!
@@ -1212,6 +1234,7 @@ type Query {
   cart: CartResponse!
   categories: [String!]!
   categoriesWithImages: [CategoryWithImage!]!
+  collections(limit: Int, page: Int): [CollectionBase!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   eventById(id: String!): EventDetail
   eventBySlug(slug: String!): EventDetail

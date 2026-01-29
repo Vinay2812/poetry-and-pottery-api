@@ -1,12 +1,13 @@
 import { Arg, Ctx, Int, Query, Resolver } from "type-graphql";
 
-import { prisma } from "@/lib/prisma";
+import type { Collection, Prisma } from "@/prisma/generated";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
   BestSellersResponse,
   CategoryWithImage,
+  CollectionBase,
   PriceHistogramBucket,
   ProductBase,
   ProductDetail,
@@ -34,6 +35,18 @@ function getOrderBy(orderBy?: ProductOrderBy) {
   }
 }
 
+type CollectionWithCount = Collection & { _count: { products: number } };
+
+function mapCollection(
+  collection: CollectionWithCount | null,
+): CollectionBase | null {
+  if (!collection) return null;
+  return {
+    ...collection,
+    products_count: collection._count.products,
+  };
+}
+
 function mapToProductBase(
   product: {
     id: number;
@@ -46,8 +59,10 @@ function mapToProductBase(
     available_quantity: number;
     color_code: string;
     color_name: string;
+    is_active: boolean;
     reviews?: { rating: number }[];
     wishlists?: { id: number }[];
+    collection?: CollectionWithCount | null;
   },
   userWishlistIds?: Set<number>,
 ): ProductBase {
@@ -74,6 +89,8 @@ function mapToProductBase(
     in_wishlist: userWishlistIds
       ? userWishlistIds.has(product.id)
       : (product.wishlists?.length ?? 0) > 0,
+    is_active: product.is_active,
+    collection: mapCollection(product.collection ?? null),
   };
 }
 
@@ -106,16 +123,81 @@ export class ProductsResolver {
             }
           : {};
 
-      const where = {
-        is_active: true,
-        ...(filter.search && {
+      const now = new Date();
+
+      // Collection filter - filter by specific collection IDs
+      const collectionFilter = filter.collection_ids?.length
+        ? { collection_id: { in: filter.collection_ids } }
+        : {};
+
+      // Build the where clause based on archive flag
+      // Archive = products that are inactive, sold out, or have an expired/not-yet-started collection
+      let archiveConditions;
+      if (filter.archive) {
+        // Archive: is_active=false OR available_quantity=0 OR (collection exists AND now outside window)
+        archiveConditions = {
           OR: [
-            { name: { contains: filter.search, mode: "insensitive" as const } },
+            { is_active: false },
+            { available_quantity: { lte: 0 } },
             {
-              description: {
-                contains: filter.search,
-                mode: "insensitive" as const,
-              },
+              AND: [
+                { collection_id: { not: null } },
+                {
+                  OR: [
+                    { collection: { ends_at: { lt: now } } },
+                    { collection: { starts_at: { gt: now } } },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+      } else {
+        // Active: is_active=true AND (no collection OR collection window includes now)
+        // Collection is active when: (starts_at is null OR starts_at <= now) AND (ends_at is null OR ends_at >= now)
+        archiveConditions = {
+          is_active: true,
+          OR: [
+            { collection_id: null },
+            {
+              AND: [
+                {
+                  OR: [
+                    { collection: { starts_at: null } },
+                    { collection: { starts_at: { lte: now } } },
+                  ],
+                },
+                {
+                  OR: [
+                    { collection: { ends_at: null } },
+                    { collection: { ends_at: { gte: now } } },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+      }
+
+      const where = {
+        ...archiveConditions,
+        ...(filter.search && {
+          AND: [
+            {
+              OR: [
+                {
+                  name: {
+                    contains: filter.search,
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  description: {
+                    contains: filter.search,
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -128,6 +210,7 @@ export class ProductsResolver {
         ...(filter.materials?.length && {
           material: { in: filter.materials },
         }),
+        ...collectionFilter,
       };
 
       let userWishlistIds: Set<number> | undefined;
@@ -136,7 +219,7 @@ export class ProductsResolver {
       if (userId) {
         // Fetch user preferences for featured sorting and wishlist IDs in parallel
         const [wishlistItems, cartItems, orderItems] = await Promise.all([
-          prisma.wishlist.findMany({
+          ctx.prisma.wishlist.findMany({
             where: { user_id: userId },
             select: {
               product_id: true,
@@ -145,7 +228,7 @@ export class ProductsResolver {
               },
             },
           }),
-          prisma.cart.findMany({
+          ctx.prisma.cart.findMany({
             where: { user_id: userId },
             select: {
               product: {
@@ -153,7 +236,7 @@ export class ProductsResolver {
               },
             },
           }),
-          prisma.purchasedProductItem.findMany({
+          ctx.prisma.purchasedProductItem.findMany({
             where: { order: { user_id: userId } },
             select: {
               product: {
@@ -186,6 +269,13 @@ export class ProductsResolver {
         }
       }
 
+      const productInclude = {
+        reviews: { select: { rating: true } },
+        collection: {
+          include: { _count: { select: { products: true } } },
+        },
+      };
+
       // For featured sorting with user preferences, use a two-phase approach
       let products;
       if (isFeaturedSort && userPreferredCategories.length > 0) {
@@ -196,9 +286,9 @@ export class ProductsResolver {
             some: { category: { in: userPreferredCategories } },
           },
         };
-        const preferredProducts = await prisma.product.findMany({
+        const preferredProducts = await ctx.prisma.product.findMany({
           where: preferredWhere,
-          include: { reviews: { select: { rating: true } } },
+          include: productInclude,
           orderBy: { purchased_products: { _count: "desc" } },
           skip: offset,
           take: limit,
@@ -216,12 +306,12 @@ export class ProductsResolver {
             offset - preferredProducts.length,
           );
 
-          const otherProducts = await prisma.product.findMany({
+          const otherProducts = await ctx.prisma.product.findMany({
             where: {
               ...where,
               id: { notIn: preferredIds },
             },
-            include: { reviews: { select: { rating: true } } },
+            include: productInclude,
             orderBy: { purchased_products: { _count: "desc" } },
             skip: remainingOffset,
             take: remainingLimit,
@@ -230,16 +320,16 @@ export class ProductsResolver {
         }
       } else {
         // Standard ordering
-        products = await prisma.product.findMany({
+        products = await ctx.prisma.product.findMany({
           where,
-          include: { reviews: { select: { rating: true } } },
+          include: productInclude,
           orderBy: getOrderBy(filter.order_by),
           skip: offset,
           take: limit,
         });
       }
 
-      const totalProducts = await prisma.product.count({ where });
+      const totalProducts = await ctx.prisma.product.count({ where });
 
       // Build where clause for price stats (respects other filters but not price filter)
       const priceStatsWhere = {
@@ -265,24 +355,27 @@ export class ProductsResolver {
         }),
       };
 
-      const [categoriesResult, materialsResult, priceStats] = await Promise.all(
-        [
-          prisma.productCategory.findMany({
+      const [categoriesResult, materialsResult, priceStats, collectionsResult] =
+        await Promise.all([
+          ctx.prisma.productCategory.findMany({
             where: { product: { is_active: true } },
             distinct: ["category"],
             select: { category: true },
           }),
-          prisma.product.findMany({
+          ctx.prisma.product.findMany({
             where: { is_active: true },
             distinct: ["material"],
             select: { material: true },
           }),
-          prisma.product.findMany({
+          ctx.prisma.product.findMany({
             where: priceStatsWhere,
             select: { price: true },
           }),
-        ],
-      );
+          ctx.prisma.collection.findMany({
+            orderBy: { name: "asc" },
+            include: { _count: { select: { products: true } } },
+          }),
+        ]);
 
       const totalPages = Math.ceil(totalProducts / limit);
 
@@ -322,6 +415,10 @@ export class ProductsResolver {
           max: maxPrice,
         },
         price_histogram: priceHistogram,
+        collections: collectionsResult.map((c) => ({
+          ...c,
+          products_count: c._count.products,
+        })),
       };
 
       return {
@@ -335,6 +432,8 @@ export class ProductsResolver {
           min_price: filter.min_price ?? meta.price_range.min,
           max_price: filter.max_price ?? meta.price_range.max,
           order_by: filter.order_by,
+          collection_ids: filter.collection_ids,
+          archive: filter.archive,
         },
         total_products: totalProducts,
         total_pages: totalPages,
@@ -351,7 +450,7 @@ export class ProductsResolver {
     return tryCatchAsync(async () => {
       const userId = ctx.user?.dbUserId ?? null;
 
-      const product = await prisma.product.findUnique({
+      const product = await ctx.prisma.product.findUnique({
         where: { slug },
         include: {
           product_categories: { select: { category: true } },
@@ -363,6 +462,9 @@ export class ProductsResolver {
             orderBy: { created_at: "desc" },
           },
           wishlists: userId ? { where: { user_id: userId } } : false,
+          collection: {
+            include: { _count: { select: { products: true } } },
+          },
         },
       });
 
@@ -412,6 +514,7 @@ export class ProductsResolver {
         in_wishlist:
           Array.isArray(product.wishlists) && product.wishlists.length > 0,
         reviews: mappedReviews,
+        collection: mapCollection(product.collection),
       };
     });
   }
@@ -424,7 +527,7 @@ export class ProductsResolver {
     return tryCatchAsync(async () => {
       const userId = ctx.user?.dbUserId ?? null;
 
-      const product = await prisma.product.findUnique({
+      const product = await ctx.prisma.product.findUnique({
         where: { id },
         include: {
           product_categories: { select: { category: true } },
@@ -436,6 +539,9 @@ export class ProductsResolver {
             orderBy: { created_at: "desc" },
           },
           wishlists: userId ? { where: { user_id: userId } } : false,
+          collection: {
+            include: { _count: { select: { products: true } } },
+          },
         },
       });
 
@@ -485,6 +591,7 @@ export class ProductsResolver {
         in_wishlist:
           Array.isArray(product.wishlists) && product.wishlists.length > 0,
         reviews: mappedReviews,
+        collection: mapCollection(product.collection),
       };
     });
   }
@@ -501,7 +608,7 @@ export class ProductsResolver {
 
       let userWishlistIds: Set<number> | undefined;
       if (userId) {
-        const wishlistItems = await prisma.wishlist.findMany({
+        const wishlistItems = await ctx.prisma.wishlist.findMany({
           where: { user_id: userId },
           select: { product_id: true },
         });
@@ -514,10 +621,21 @@ export class ProductsResolver {
       };
 
       const [products, total] = await Promise.all([
-        prisma.product.findMany({
+        ctx.prisma.product.findMany({
           where,
           include: {
             reviews: { select: { rating: true } },
+            collection: {
+              where: {
+                OR: [
+                  { starts_at: null },
+                  { starts_at: { lte: new Date() } },
+                  { ends_at: null },
+                  { ends_at: { gte: new Date() } },
+                ],
+              },
+              include: { _count: { select: { products: true } } },
+            },
           },
           orderBy: {
             purchased_products: { _count: "desc" },
@@ -525,7 +643,7 @@ export class ProductsResolver {
           skip: offset,
           take: limit,
         }),
-        prisma.product.count({ where }),
+        ctx.prisma.product.count({ where }),
       ]);
 
       const totalPages = Math.ceil(total / limit);
@@ -557,7 +675,7 @@ export class ProductsResolver {
 
       // Get user's wishlist for in_wishlist field
       if (userId) {
-        const wishlistItems = await prisma.wishlist.findMany({
+        const wishlistItems = await ctx.prisma.wishlist.findMany({
           where: { user_id: userId },
           select: { product_id: true },
         });
@@ -566,7 +684,7 @@ export class ProductsResolver {
 
       // If productId is provided, use category-based recommendations (like relatedProducts)
       if (productId) {
-        const productCategories = await prisma.productCategory.findMany({
+        const productCategories = await ctx.prisma.productCategory.findMany({
           where: { product_id: productId },
           select: { category: true },
         });
@@ -574,7 +692,7 @@ export class ProductsResolver {
       } else if (userId) {
         // Use personalized recommendations based on user's purchase/wishlist history
         const [userPurchases, userWishlists] = await Promise.all([
-          prisma.purchasedProductItem.findMany({
+          ctx.prisma.purchasedProductItem.findMany({
             where: { order: { user_id: userId } },
             include: {
               product: {
@@ -584,7 +702,7 @@ export class ProductsResolver {
               },
             },
           }),
-          prisma.wishlist.findMany({
+          ctx.prisma.wishlist.findMany({
             where: { user_id: userId },
             include: {
               product: {
@@ -612,7 +730,7 @@ export class ProductsResolver {
       if (productId) excludeIds.push(productId);
 
       // Build where clause based on whether we have category preferences
-      const baseWhere = {
+      const baseWhere: Prisma.ProductWhereInput = {
         is_active: true,
         available_quantity: { gt: 0 },
         ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
@@ -631,13 +749,24 @@ export class ProductsResolver {
       }
 
       // Get total count for pagination
-      const total = await prisma.product.count({ where: whereClause });
+      const total = await ctx.prisma.product.count({ where: whereClause });
 
       // Get products with pagination
-      let products = await prisma.product.findMany({
+      let products = await ctx.prisma.product.findMany({
         where: whereClause,
         include: {
           reviews: { select: { rating: true } },
+          collection: {
+            where: {
+              OR: [
+                { starts_at: null },
+                { starts_at: { lte: new Date() } },
+                { ends_at: null },
+                { ends_at: { gte: new Date() } },
+              ],
+            },
+            include: { _count: { select: { products: true } } },
+          },
         },
         orderBy: {
           purchased_products: { _count: "desc" },
@@ -649,7 +778,7 @@ export class ProductsResolver {
       // If we don't have enough products from category preferences, fill with best sellers
       if (products.length < limit && categoryPreferences.length > 0) {
         const existingIds = products.map((p) => p.id);
-        const additionalProducts = await prisma.product.findMany({
+        const additionalProducts = await ctx.prisma.product.findMany({
           where: {
             is_active: true,
             available_quantity: { gt: 0 },
@@ -657,6 +786,9 @@ export class ProductsResolver {
           },
           include: {
             reviews: { select: { rating: true } },
+            collection: {
+              include: { _count: { select: { products: true } } },
+            },
           },
           orderBy: {
             purchased_products: { _count: "desc" },
@@ -680,9 +812,9 @@ export class ProductsResolver {
   }
 
   @Query(() => [String])
-  async categories(): Promise<string[]> {
+  async categories(@Ctx() ctx: Context): Promise<string[]> {
     return tryCatchAsync(async () => {
-      const categoryCounts = await prisma.productCategory.groupBy({
+      const categoryCounts = await ctx.prisma.productCategory.groupBy({
         by: ["category"],
         _count: {
           product_id: true,
@@ -699,9 +831,11 @@ export class ProductsResolver {
   }
 
   @Query(() => [CategoryWithImage])
-  async categoriesWithImages(): Promise<CategoryWithImage[]> {
+  async categoriesWithImages(
+    @Ctx() ctx: Context,
+  ): Promise<CategoryWithImage[]> {
     return tryCatchAsync(async () => {
-      const categoryCounts = await prisma.productCategory.groupBy({
+      const categoryCounts = await ctx.prisma.productCategory.groupBy({
         by: ["category"],
         _count: { product_id: true },
         orderBy: { _count: { product_id: "desc" } },
@@ -709,7 +843,7 @@ export class ProductsResolver {
 
       const categories = await Promise.all(
         categoryCounts.map(async (c) => {
-          const productCategory = await prisma.productCategory.findFirst({
+          const productCategory = await ctx.prisma.productCategory.findFirst({
             where: { category: c.category },
             include: {
               product: {
@@ -730,14 +864,39 @@ export class ProductsResolver {
   }
 
   @Query(() => [String])
-  async materials(): Promise<string[]> {
+  async materials(@Ctx() ctx: Context): Promise<string[]> {
     return tryCatchAsync(async () => {
-      const materials = await prisma.product.findMany({
+      const materials = await ctx.prisma.product.findMany({
         where: { is_active: true },
         distinct: ["material"],
         select: { material: true },
       });
       return materials.map((m) => m.material);
+    });
+  }
+
+  @Query(() => [CollectionBase])
+  async collections(
+    @Ctx() ctx: Context,
+    @Arg("limit", () => Int, { nullable: true }) limit: number = 10,
+    @Arg("page", () => Int, { nullable: true }) page: number = 1,
+  ): Promise<CollectionBase[]> {
+    return tryCatchAsync(async () => {
+      const offset = (page - 1) * limit;
+      const collections = await ctx.prisma.collection.findMany({
+        skip: offset,
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: {
+          _count: {
+            select: { products: true },
+          },
+        },
+      });
+      return collections.map((collection) => ({
+        ...collection,
+        products_count: collection._count.products,
+      }));
     });
   }
 }

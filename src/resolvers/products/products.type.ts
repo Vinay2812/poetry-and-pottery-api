@@ -23,6 +23,39 @@ registerEnumType(ProductOrderBy, {
 });
 
 @ObjectType()
+export class CollectionBase {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  slug!: string;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  description?: string | null;
+
+  @Field(() => String, { nullable: true })
+  image_url?: string | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  starts_at?: Date | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  ends_at?: Date | null;
+
+  @Field(() => GraphQLDateTime)
+  created_at!: Date;
+
+  @Field(() => GraphQLDateTime)
+  updated_at!: Date;
+
+  @Field(() => Int)
+  products_count!: number;
+}
+
+@ObjectType()
 export class ProductBase {
   @Field(() => Int)
   id!: number;
@@ -62,6 +95,12 @@ export class ProductBase {
 
   @Field(() => Boolean)
   in_wishlist!: boolean;
+
+  @Field(() => Boolean)
+  is_active!: boolean;
+
+  @Field(() => CollectionBase, { nullable: true })
+  collection?: CollectionBase | null;
 }
 
 @ObjectType()
@@ -182,6 +221,9 @@ export class ProductDetail {
 
   @Field(() => [ProductReview])
   reviews!: ProductReview[];
+
+  @Field(() => CollectionBase, { nullable: true })
+  collection?: CollectionBase | null;
 }
 
 @ObjectType()
@@ -218,6 +260,12 @@ export class ProductsFilterInput {
 
   @Field(() => ProductOrderBy, { nullable: true })
   order_by?: ProductOrderBy;
+
+  @Field(() => [Int], { nullable: true })
+  collection_ids?: number[];
+
+  @Field(() => Boolean, { nullable: true })
+  archive?: boolean;
 }
 
 @ObjectType()
@@ -245,6 +293,12 @@ export class ProductsFilter {
 
   @Field(() => ProductOrderBy, { nullable: true })
   order_by?: ProductOrderBy;
+
+  @Field(() => [Int], { nullable: true })
+  collection_ids?: number[];
+
+  @Field(() => Boolean, { nullable: true })
+  archive?: boolean;
 }
 
 @ObjectType()
@@ -281,6 +335,9 @@ export class ProductsMeta {
 
   @Field(() => [PriceHistogramBucket])
   price_histogram!: PriceHistogramBucket[];
+
+  @Field(() => [CollectionBase])
+  collections!: CollectionBase[];
 }
 
 @ObjectType()

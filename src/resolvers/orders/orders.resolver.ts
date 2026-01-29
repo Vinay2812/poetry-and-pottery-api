@@ -37,6 +37,7 @@ function mapToProductBase(product: {
   available_quantity: number;
   color_code: string;
   color_name: string;
+  is_active: boolean;
   reviews?: { rating: number }[];
 }) {
   const reviews = product.reviews ?? [];
@@ -60,6 +61,7 @@ function mapToProductBase(product: {
     reviews_count: reviewsCount,
     avg_rating: avgRating,
     in_wishlist: false,
+    is_active: product.is_active,
   };
 }
 
@@ -84,6 +86,7 @@ function mapOrderItem(
       available_quantity: number;
       color_code: string;
       color_name: string;
+      is_active: boolean;
       reviews?: { rating: number }[];
     };
   },
@@ -152,6 +155,7 @@ function mapOrder(
         available_quantity: number;
         color_code: string;
         color_name: string;
+        is_active: boolean;
         reviews?: { rating: number }[];
       };
     }[];
@@ -362,17 +366,107 @@ export class OrdersResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      // Get cart items
+      // Validate product_ids is not empty
+      if (!input.product_ids || input.product_ids.length === 0) {
+        return {
+          success: false,
+          order: null,
+          error: "No products specified for order",
+        };
+      }
+
+      // Get cart items for specified product IDs only
       const cartItems = await ctx.prisma.cart.findMany({
-        where: { user_id: userId },
-        include: { product: true },
+        where: {
+          user_id: userId,
+          product_id: { in: input.product_ids },
+        },
+        include: {
+          product: {
+            include: {
+              collection: {
+                select: { ends_at: true, name: true },
+              },
+            },
+          },
+        },
       });
 
       if (cartItems.length === 0) {
         return {
           success: false,
           order: null,
-          error: "Cart is empty",
+          error: "No matching products found in cart",
+        };
+      }
+
+      // Check if all requested products are in cart
+      const cartProductIds = new Set(cartItems.map((item) => item.product_id));
+      const missingProducts = input.product_ids.filter(
+        (id) => !cartProductIds.has(id),
+      );
+      if (missingProducts.length > 0) {
+        return {
+          success: false,
+          order: null,
+          error: `Some products not found in cart: ${missingProducts.join(", ")}`,
+        };
+      }
+
+      // Validate products are available for order
+      const unavailableProducts: string[] = [];
+      const insufficientStock: string[] = [];
+      const now = new Date();
+
+      for (const item of cartItems) {
+        const product = item.product;
+
+        // Check if product is inactive/archived
+        if (!product.is_active) {
+          unavailableProducts.push(`"${product.name}" is no longer available`);
+          continue;
+        }
+
+        // Check if collection has ended
+        if (product.collection?.ends_at) {
+          const endsAt = new Date(product.collection.ends_at);
+          if (endsAt < now) {
+            unavailableProducts.push(
+              `"${product.name}" - collection "${product.collection.name}" has ended`,
+            );
+            continue;
+          }
+        }
+
+        // Check if product is out of stock
+        if (product.available_quantity <= 0) {
+          unavailableProducts.push(`"${product.name}" is out of stock`);
+          continue;
+        }
+
+        // Check if requested quantity exceeds available
+        if (item.quantity > product.available_quantity) {
+          insufficientStock.push(
+            `"${product.name}" - only ${product.available_quantity} available, requested ${item.quantity}`,
+          );
+        }
+      }
+
+      // Return error if any products are unavailable
+      if (unavailableProducts.length > 0) {
+        return {
+          success: false,
+          order: null,
+          error: `Some products are unavailable: ${unavailableProducts.join("; ")}`,
+        };
+      }
+
+      // Return error if insufficient stock
+      if (insufficientStock.length > 0) {
+        return {
+          success: false,
+          order: null,
+          error: `Insufficient stock: ${insufficientStock.join("; ")}`,
         };
       }
 
@@ -416,7 +510,10 @@ export class OrdersResolver {
           },
         }),
         ctx.prisma.cart.deleteMany({
-          where: { user_id: userId },
+          where: {
+            user_id: userId,
+            product_id: { in: input.product_ids },
+          },
         }),
       ]);
 

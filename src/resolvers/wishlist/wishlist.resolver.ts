@@ -3,9 +3,11 @@ import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 
 import { prisma } from "@/lib/prisma";
 import { authRequired } from "@/middlewares/auth.middleware";
+import type { Collection } from "@/prisma/generated";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { CollectionBase } from "../products/products.type";
 import {
   ToggleAction,
   ToggleWishlistResponse,
@@ -14,6 +16,18 @@ import {
   WishlistMutationResponse,
   WishlistResponse,
 } from "./wishlist.type";
+
+type CollectionWithCount = Collection & { _count: { products: number } };
+
+function mapCollection(
+  collection: CollectionWithCount | null,
+): CollectionBase | null {
+  if (!collection) return null;
+  return {
+    ...collection,
+    products_count: collection._count.products,
+  };
+}
 
 function getUserId(ctx: Context): number {
   const userId = ctx.user?.dbUserId;
@@ -34,7 +48,9 @@ function mapToProductBase(product: {
   available_quantity: number;
   color_code: string;
   color_name: string;
+  is_active: boolean;
   reviews?: { rating: number }[];
+  collection?: CollectionWithCount | null;
 }) {
   const reviews = product.reviews ?? [];
   const reviewsCount = reviews.length;
@@ -57,6 +73,8 @@ function mapToProductBase(product: {
     reviews_count: reviewsCount,
     avg_rating: avgRating,
     in_wishlist: true,
+    is_active: product.is_active,
+    collection: mapCollection(product.collection ?? null),
   };
 }
 
@@ -77,7 +95,9 @@ function mapWishlistItem(wishlist: {
     available_quantity: number;
     color_code: string;
     color_name: string;
+    is_active: boolean;
     reviews?: { rating: number }[];
+    collection?: CollectionWithCount | null;
   };
 }): WishlistItem {
   return {
@@ -112,6 +132,9 @@ export class WishlistResolver {
             product: {
               include: {
                 reviews: { select: { rating: true } },
+                collection: {
+                  include: { _count: { select: { products: true } } },
+                },
               },
             },
           },
@@ -172,6 +195,9 @@ export class WishlistResolver {
             product: {
               include: {
                 reviews: { select: { rating: true } },
+                collection: {
+                  include: { _count: { select: { products: true } } },
+                },
               },
             },
           },
@@ -192,6 +218,9 @@ export class WishlistResolver {
           product: {
             include: {
               reviews: { select: { rating: true } },
+              collection: {
+                include: { _count: { select: { products: true } } },
+              },
             },
           },
         },
@@ -265,6 +294,9 @@ export class WishlistResolver {
           product: {
             include: {
               reviews: { select: { rating: true } },
+              collection: {
+                include: { _count: { select: { products: true } } },
+              },
             },
           },
         },
