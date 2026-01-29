@@ -111,6 +111,26 @@ model ProductCategory {
   @@map("product_categories")
 }
 
+model CustomizationOption {
+  id             Int     @id @default(autoincrement())
+  category       String // Links to ProductCategory.category (e.g., "Mugs", "Vases")
+  type           String // Flexible: "SIZE", "COLOR", "SHAPE", "TEXT", or any new type
+  name           String // Display name: "Small", "150ml", "Ocean Blue"
+  value          String // Internal value: "S", "150", "#4682B4"
+  price_modifier Int     @default(0) // Price adjustment in rupees
+  sort_order     Int     @default(0)
+  is_active      Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@unique([category, type, value]) // Prevent duplicate options
+  @@index([category])
+  @@index([type])
+  @@index([is_active])
+  @@map("customization_options")
+}
+
 model Collection {
   id          Int       @id @default(autoincrement())
   slug        String    @unique @db.Text
@@ -261,13 +281,18 @@ model Wishlist {
   user_id    Int
   product_id Int
 
+  /// [ProductCustomizationData]
+  custom_data      Json?
+  custom_data_hash String @default("") // Hash of custom_data for uniqueness check
+
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
   user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, product_id])
+  // Unique on user + product + customization hash (same product with different customizations = separate rows)
+  @@unique([user_id, product_id, custom_data_hash])
   @@index([user_id])
   @@index([product_id])
   @@map("wishlists")
@@ -279,13 +304,18 @@ model Cart {
   product_id Int
   quantity   Int @default(1)
 
+  /// [ProductCustomizationData]
+  custom_data      Json?
+  custom_data_hash String @default("") // Hash of custom_data for uniqueness check
+
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
   user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, product_id])
+  // Unique on user + product + customization hash (same product with different customizations = separate rows)
+  @@unique([user_id, product_id, custom_data_hash])
   @@index([user_id])
   @@index([product_id])
   @@map("carts")
@@ -340,13 +370,18 @@ model PurchasedProductItem {
   discount   Int    @default(0)
   price      Int
 
+  /// [ProductCustomizationData]
+  custom_data      Json?
+  custom_data_hash String @default("") // Hash of custom_data for uniqueness check
+
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
   order   ProductOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([order_id, product_id])
+  // Unique on order + product + customization hash (same product with different customizations = separate items)
+  @@unique([order_id, product_id, custom_data_hash])
   @@index([order_id])
   @@index([product_id])
   @@map("purchased_product_items")

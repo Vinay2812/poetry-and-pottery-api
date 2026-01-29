@@ -181,9 +181,10 @@ export class WishlistResolver {
 
       const existing = await prisma.wishlist.findUnique({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: productId,
+            custom_data_hash: "",
           },
         },
       });
@@ -244,9 +245,10 @@ export class WishlistResolver {
 
       await prisma.wishlist.delete({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: productId,
+            custom_data_hash: "",
           },
         },
       });
@@ -266,9 +268,10 @@ export class WishlistResolver {
 
       const existing = await prisma.wishlist.findUnique({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: productId,
+            custom_data_hash: "",
           },
         },
       });
@@ -322,9 +325,10 @@ export class WishlistResolver {
       await prisma.$transaction(async (tx) => {
         await tx.cart.upsert({
           where: {
-            user_id_product_id: {
+            user_id_product_id_custom_data_hash: {
               user_id: userId,
               product_id: productId,
+              custom_data_hash: "",
             },
           },
           update: {
@@ -334,14 +338,16 @@ export class WishlistResolver {
             user_id: userId,
             product_id: productId,
             quantity: 1,
+            custom_data_hash: "",
           },
         });
 
         await tx.wishlist.delete({
           where: {
-            user_id_product_id: {
+            user_id_product_id_custom_data_hash: {
               user_id: userId,
               product_id: productId,
+              custom_data_hash: "",
             },
           },
         });

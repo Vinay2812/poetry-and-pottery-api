@@ -190,9 +190,10 @@ export class CartResolver {
 
       const cart = await prisma.cart.upsert({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
+            custom_data_hash: "",
           },
         },
         update: {
@@ -202,6 +203,7 @@ export class CartResolver {
           user_id: userId,
           product_id: input.product_id,
           quantity,
+          custom_data_hash: "",
         },
         include: {
           product: {
@@ -215,9 +217,10 @@ export class CartResolver {
 
       const wishlistItem = await prisma.wishlist.findUnique({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
+            custom_data_hash: "",
           },
         },
       });
@@ -228,7 +231,10 @@ export class CartResolver {
 
       return {
         success: true,
-        item: mapCartItem(cart, userWishlistIds),
+        item: mapCartItem(
+          cart as Parameters<typeof mapCartItem>[0],
+          userWishlistIds,
+        ),
       };
     });
   }
@@ -245,9 +251,10 @@ export class CartResolver {
       if (input.quantity <= 0) {
         await prisma.cart.delete({
           where: {
-            user_id_product_id: {
+            user_id_product_id_custom_data_hash: {
               user_id: userId,
               product_id: input.product_id,
+              custom_data_hash: "",
             },
           },
         });
@@ -257,9 +264,10 @@ export class CartResolver {
 
       const cart = await prisma.cart.update({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
+            custom_data_hash: "",
           },
         },
         data: { quantity: input.quantity },
@@ -275,9 +283,10 @@ export class CartResolver {
 
       const wishlistItem = await prisma.wishlist.findUnique({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
+            custom_data_hash: "",
           },
         },
       });
@@ -288,7 +297,10 @@ export class CartResolver {
 
       return {
         success: true,
-        item: mapCartItem(cart, userWishlistIds),
+        item: mapCartItem(
+          cart as Parameters<typeof mapCartItem>[0],
+          userWishlistIds,
+        ),
       };
     });
   }
@@ -304,9 +316,10 @@ export class CartResolver {
 
       await prisma.cart.delete({
         where: {
-          user_id_product_id: {
+          user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: productId,
+            custom_data_hash: "",
           },
         },
       });

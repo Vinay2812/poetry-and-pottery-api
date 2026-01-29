@@ -176,6 +176,20 @@ declare global {
       zip: string;
       contact_number?: string | null;
     }
+
+    // ProductCustomizationData for Cart, Wishlist, and PurchasedProductItem custom_data fields
+    interface CustomizationOptionSnapshot {
+      type: string; // Flexible: "SIZE", "COLOR", "SHAPE", "TEXT", etc.
+      optionId: number; // 0 for user-entered text
+      name: string;
+      value: string;
+      priceModifier: number;
+    }
+
+    interface ProductCustomizationData {
+      options: CustomizationOptionSnapshot[];
+      totalModifier: number;
+    }
   }
 }
 
