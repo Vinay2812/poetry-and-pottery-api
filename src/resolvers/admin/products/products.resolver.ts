@@ -7,6 +7,7 @@ import { tryCatchAsync } from "@/utils/trycatch";
 import {
   AdminMutationResponse,
   AdminProduct,
+  AdminProductCollection,
   AdminProductDetail,
   AdminProductMutationResponse,
   AdminProductReviewsResponse,
@@ -131,6 +132,14 @@ export class AdminProductsResolver {
           color_code: true,
           material: true,
           image_urls: true,
+          collection_id: true,
+          collection: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           created_at: true,
           updated_at: true,
           product_categories: {
@@ -212,6 +221,25 @@ export class AdminProductsResolver {
     });
   }
 
+  @Query(() => [AdminProductCollection])
+  @adminRequired()
+  async adminAllCollections(
+    @Ctx() ctx: Context,
+  ): Promise<AdminProductCollection[]> {
+    return tryCatchAsync(async () => {
+      const collections = await ctx.prisma.collection.findMany({
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+        orderBy: { name: "asc" },
+      });
+
+      return collections;
+    });
+  }
+
   @Mutation(() => AdminProductMutationResponse)
   @adminRequired()
   async adminCreateProduct(
@@ -233,6 +261,7 @@ export class AdminProductsResolver {
         material,
         image_urls,
         categories,
+        collection_id,
       } = input;
 
       // Validate slug uniqueness
@@ -263,6 +292,7 @@ export class AdminProductsResolver {
           color_code,
           material,
           image_urls,
+          collection_id: collection_id ?? null,
           product_categories: {
             create: categories.map((category) => ({ category })),
           },
@@ -285,7 +315,7 @@ export class AdminProductsResolver {
     @Arg("input", () => UpdateProductInput) input: UpdateProductInput,
   ): Promise<AdminMutationResponse> {
     return tryCatchAsync(async () => {
-      const { categories, ...data } = input;
+      const { categories, collection_id, ...data } = input;
 
       // If slug is being updated, validate uniqueness
       if (data.slug) {
@@ -303,10 +333,20 @@ export class AdminProductsResolver {
       }
 
       await ctx.prisma.$transaction(async (tx) => {
+        // Build update data
+        const updateData: typeof data & { collection_id?: number | null } = {
+          ...data,
+        };
+
+        // Handle collection_id update (explicitly set to null if passed as null)
+        if (collection_id !== undefined) {
+          updateData.collection_id = collection_id;
+        }
+
         // Update product
         await tx.product.update({
           where: { id },
-          data,
+          data: updateData,
         });
 
         // Update categories if provided

@@ -11,8 +11,9 @@ export * from "./search/search.resolver";
 
 // Admin resolvers
 export * from "./admin/analytics/analytics.resolver";
-export * from "./admin/products/products.resolver";
 export * from "./admin/categories/categories.resolver";
+export * from "./admin/collections/collections.resolver";
+export * from "./admin/products/products.resolver";
 export * from "./admin/events/events.resolver";
 export * from "./admin/orders/orders.resolver";
 export * from "./admin/registrations/registrations.resolver";

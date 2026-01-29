@@ -68,6 +68,63 @@ type AdminCategoryMutationResponse {
   success: Boolean!
 }
 
+type AdminCollection {
+  created_at: DateTime!
+  description: String
+  ends_at: DateTime
+  id: Int!
+  image_url: String
+  name: String!
+  products_count: Int!
+  slug: String!
+  starts_at: DateTime
+  updated_at: DateTime!
+}
+
+type AdminCollectionDetail {
+  created_at: DateTime!
+  description: String
+  ends_at: DateTime
+  id: Int!
+  image_url: String
+  name: String!
+  products: [AdminCollectionProduct!]!
+  products_count: Int!
+  slug: String!
+  starts_at: DateTime
+  updated_at: DateTime!
+}
+
+type AdminCollectionMutationResponse {
+  collectionId: Int
+  error: String
+  success: Boolean!
+}
+
+type AdminCollectionProduct {
+  id: Int!
+  image_url: String
+  is_active: Boolean!
+  name: String!
+  price: Int!
+  slug: String!
+}
+
+input AdminCollectionsFilterInput {
+  active: Boolean
+  limit: Int = 20
+  page: Int = 1
+  search: String
+}
+
+type AdminCollectionsResponse {
+  collections: [AdminCollection!]!
+  limit: Int!
+  page: Int!
+  total: Int!
+  totalPages: Int!
+}
+
 type AdminContentMutationResponse {
   error: String
   success: Boolean!
@@ -242,6 +299,12 @@ type AdminProduct {
   total_quantity: Int!
 }
 
+type AdminProductCollection {
+  id: Int!
+  name: String!
+  slug: String!
+}
+
 type AdminProductCount {
   carts: Int!
   reviews: Int!
@@ -252,6 +315,8 @@ type AdminProductDetail {
   _count: AdminProductDetailCount!
   available_quantity: Int!
   categories: [String!]!
+  collection: AdminProductCollection
+  collection_id: Int
   color_code: String!
   color_name: String!
   created_at: DateTime!
@@ -518,6 +583,11 @@ type AdminUsersResponse {
   users: [AdminUser!]!
 }
 
+input AssignProductsToCollectionInput {
+  collectionId: Int!
+  productIds: [Int!]!
+}
+
 type BestSellersResponse {
   page: Int!
   products: [ProductBase!]!
@@ -600,6 +670,15 @@ input CreateAddressInput {
   zip: String!
 }
 
+input CreateCollectionInput {
+  description: String
+  ends_at: DateTime
+  image_url: String
+  name: String!
+  slug: String!
+  starts_at: DateTime
+}
+
 input CreateEventInput {
   available_seats: Int!
   description: String!
@@ -636,6 +715,7 @@ input CreateOrderInput {
 input CreateProductInput {
   available_quantity: Int!
   categories: [String!]!
+  collection_id: Int
   color_code: String!
   color_name: String!
   description: String
@@ -902,18 +982,23 @@ type Mutation {
   addToCart(input: AddToCartInput!): CartMutationResponse!
   addToWishlist(productId: Int!): WishlistMutationResponse!
   adminAddCategory(icon: String = "tag", name: String!): AdminCategoryMutationResponse!
+  adminAssignProductsToCollection(input: AssignProductsToCollectionInput!): AdminCollectionMutationResponse!
+  adminCreateCollection(input: CreateCollectionInput!): AdminCollectionMutationResponse!
   adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
   adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!
   adminDeleteCategory(name: String!): AdminCategoryMutationResponse!
+  adminDeleteCollection(id: Int!): AdminCollectionMutationResponse!
   adminDeleteEvent(id: String!): AdminEventMutationResponse!
   adminDeleteEventReview(reviewId: Int!): AdminEventMutationResponse!
   adminDeleteProduct(id: Int!): AdminMutationResponse!
   adminDeleteProductReview(reviewId: Int!): AdminMutationResponse!
   adminGetPresignedUploadUrl(input: GetPresignedUploadUrlInput!): PresignedUploadUrlResponse!
+  adminRemoveProductFromCollection(productId: Int!): AdminCollectionMutationResponse!
   adminRenameCategory(newName: String!, oldName: String!): AdminCategoryMutationResponse!
   adminToggleContentPageActive(slug: String!): AdminContentMutationResponse!
   adminToggleProductActive(id: Int!): AdminMutationResponse!
   adminUpdateCategoryIcon(category: String!, icon: String!): AdminCategoryMutationResponse!
+  adminUpdateCollection(id: Int!, input: UpdateCollectionInput!): AdminCollectionMutationResponse!
   adminUpdateContactInfo(input: UpdateContactInfoInput!): AdminSettingsMutationResponse!
   adminUpdateContentPage(input: UpdateContentPageInput!, slug: String!): AdminContentMutationResponse!
   adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
@@ -1200,10 +1285,13 @@ type ProductsStats {
 type Query {
   addressById(id: Int!): UserAddress
   adminAllCategories: [String!]!
+  adminAllCollections: [AdminProductCollection!]!
   adminAllConfiguredCategories: [AdminCategoryConfig!]!
   adminAllSettings: [AdminSiteSetting!]!
   adminAvailableIcons: [AdminIconOption!]!
   adminCategories: AdminCategoriesResponse!
+  adminCollectionById(id: Int!): AdminCollectionDetail
+  adminCollections(filter: AdminCollectionsFilterInput): AdminCollectionsResponse!
   adminContactInfo: ContactInfo!
   adminContentPageBySlug(slug: String!): AdminContentPage
   adminContentPages: [AdminContentPageListItem!]!
@@ -1536,6 +1624,15 @@ input UpdateCartQuantityInput {
   quantity: Int!
 }
 
+input UpdateCollectionInput {
+  description: String
+  ends_at: DateTime
+  image_url: String
+  name: String
+  slug: String
+  starts_at: DateTime
+}
+
 input UpdateContactInfoInput {
   address: String
   email: String
@@ -1577,6 +1674,7 @@ input UpdateHeroImagesInput {
 input UpdateProductInput {
   available_quantity: Int
   categories: [String!]
+  collection_id: Int
   color_code: String
   color_name: String
   description: String

@@ -77,6 +77,18 @@ export class AdminProductDetailCount {
 }
 
 @ObjectType()
+export class AdminProductCollection {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String)
+  slug!: string;
+}
+
+@ObjectType()
 export class AdminProductDetail {
   @Field(() => Int)
   id!: number;
@@ -119,6 +131,12 @@ export class AdminProductDetail {
 
   @Field(() => [String])
   categories!: string[];
+
+  @Field(() => Int, { nullable: true })
+  collection_id?: number | null;
+
+  @Field(() => AdminProductCollection, { nullable: true })
+  collection?: AdminProductCollection | null;
 
   @Field(() => GraphQLDateTime)
   created_at!: Date;
@@ -209,6 +227,9 @@ export class CreateProductInput {
 
   @Field(() => [String])
   categories!: string[];
+
+  @Field(() => Int, { nullable: true })
+  collection_id?: number | null;
 }
 
 @InputType()
@@ -251,6 +272,9 @@ export class UpdateProductInput {
 
   @Field(() => [String], { nullable: true })
   categories?: string[];
+
+  @Field(() => Int, { nullable: true })
+  collection_id?: number | null;
 }
 
 @ObjectType()
