@@ -82,6 +82,7 @@ model Product {
   is_active          Boolean  @default(true)
   price              Int
   image_urls         String[]
+  collection_id      Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
@@ -91,8 +92,10 @@ model Product {
   wishlists          Wishlist[]
   carts              Cart[]
   reviews            Review[]
+  collection         Collection?            @relation(fields: [collection_id], references: [id], onDelete: SetNull)
 
   @@index([price])
+  @@index([collection_id])
   @@map("products")
 }
 
@@ -106,6 +109,27 @@ model ProductCategory {
   @@unique([product_id, category])
   @@index([product_id])
   @@map("product_categories")
+}
+
+model Collection {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique @db.Text
+  name        String
+  description String?
+  image_url   String?
+
+  // Time-based collection windows (for seasonal/limited collections)
+  starts_at DateTime? // When collection becomes visible (null = immediately)
+  ends_at   DateTime? // When collection ends (null = no end date)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  products Product[]
+
+  @@index([starts_at])
+  @@index([ends_at])
+  @@map("collections")
 }
 
 enum EventLevel {
