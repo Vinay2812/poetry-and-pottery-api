@@ -187,7 +187,7 @@ const DEFAULT_FAQ_CONTENT: FAQPageContent = {
         {
           question: "Do you ship internationally?",
           answer:
-            "Yes! We ship to select countries. International orders typically take 10-15 business days. Shipping costs are calculated at checkout based on destination and package weight.",
+            "No, we currently deliver within India only. We do not offer international shipping at this time.",
         },
         {
           question: "How is my order packaged?",
@@ -197,7 +197,7 @@ const DEFAULT_FAQ_CONTENT: FAQPageContent = {
         {
           question: "Can I track my order?",
           answer:
-            "Absolutely! Once your order ships, you'll receive an email with tracking information. You can also track your order through your account dashboard.",
+            "Yes! You can track your order through our website under the Orders section in your account. For any queries, please reach out to us directly on WhatsApp.",
         },
       ],
     },
@@ -232,17 +232,17 @@ const DEFAULT_FAQ_CONTENT: FAQPageContent = {
         {
           question: "What is your return policy?",
           answer:
-            "We offer a 30-day return policy for unused items in original packaging. Custom or personalized pieces cannot be returned unless defective.",
+            "All sales are final. We do not offer returns or exchanges. Please review your order carefully before purchasing.",
         },
         {
           question: "What if my item arrives damaged?",
           answer:
-            "We're so sorry if that happens! Please contact us within 48 hours of delivery with photos of the damage. We'll arrange a replacement or full refund at no extra cost.",
+            "Please contact us on WhatsApp within 48 hours of delivery with photos of the damage. We will review your case and assist you accordingly.",
         },
         {
-          question: "Can I exchange an item for a different color or size?",
+          question: "Do you offer Cash on Delivery (COD)?",
           answer:
-            "Yes, exchanges are welcome within 30 days. Simply contact us to initiate an exchange. You'll be responsible for return shipping unless the exchange is due to our error.",
+            "No, we accept online payments only. Cash on Delivery is not available for any orders.",
         },
       ],
     },
