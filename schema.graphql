@@ -47,6 +47,26 @@ type AddressesResponse {
   total: Int!
 }
 
+type AdminBulkDeleteEventsResponse {
+  cancelledCount: Int!
+  deletedCount: Int!
+  error: String
+  failedCount: Int!
+  results: [BulkDeleteEventResult!]!
+  success: Boolean!
+  totalRequested: Int!
+}
+
+type AdminBulkDeleteProductsResponse {
+  deactivatedCount: Int!
+  deletedCount: Int!
+  error: String
+  failedCount: Int!
+  results: [BulkDeleteProductResult!]!
+  success: Boolean!
+  totalRequested: Int!
+}
+
 type AdminCategoriesResponse {
   categories: [AdminCategory!]!
   total: Int!
@@ -370,6 +390,7 @@ type AdminProductReviewsResponse {
 
 input AdminProductsFilterInput {
   category: String
+  collectionId: Int
   isActive: Boolean
   limit: Int = 20
   lowStock: Boolean
@@ -593,6 +614,28 @@ type BestSellersResponse {
   products: [ProductBase!]!
   total: Int!
   total_pages: Int!
+}
+
+type BulkDeleteEventResult {
+  action: String!
+  error: String
+  id: String!
+  success: Boolean!
+}
+
+input BulkDeleteEventsInput {
+  ids: [String!]!
+}
+
+type BulkDeleteProductResult {
+  action: String!
+  error: String
+  id: Int!
+  success: Boolean!
+}
+
+input BulkDeleteProductsInput {
+  ids: [Int!]!
 }
 
 type CancelRegistrationResponse {
@@ -983,6 +1026,8 @@ type Mutation {
   addToWishlist(productId: Int!): WishlistMutationResponse!
   adminAddCategory(icon: String = "tag", name: String!): AdminCategoryMutationResponse!
   adminAssignProductsToCollection(input: AssignProductsToCollectionInput!): AdminCollectionMutationResponse!
+  adminBulkDeleteEvents(input: BulkDeleteEventsInput!): AdminBulkDeleteEventsResponse!
+  adminBulkDeleteProducts(input: BulkDeleteProductsInput!): AdminBulkDeleteProductsResponse!
   adminCreateCollection(input: CreateCollectionInput!): AdminCollectionMutationResponse!
   adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
   adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!

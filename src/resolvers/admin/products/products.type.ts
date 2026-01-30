@@ -156,6 +156,9 @@ export class AdminProductsFilterInput {
   @Field(() => String, { nullable: true })
   category?: string;
 
+  @Field(() => Int, { nullable: true })
+  collectionId?: number;
+
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
 
@@ -344,4 +347,49 @@ export class AdminProductReviewsResponse {
 
   @Field(() => Float)
   averageRating!: number;
+}
+
+@InputType()
+export class BulkDeleteProductsInput {
+  @Field(() => [Int])
+  ids!: number[];
+}
+
+@ObjectType()
+export class BulkDeleteProductResult {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => Boolean)
+  success!: boolean;
+
+  @Field(() => String)
+  action!: string;
+
+  @Field(() => String, { nullable: true })
+  error?: string | null;
+}
+
+@ObjectType()
+export class AdminBulkDeleteProductsResponse {
+  @Field(() => Boolean)
+  success!: boolean;
+
+  @Field(() => Int)
+  totalRequested!: number;
+
+  @Field(() => Int)
+  deletedCount!: number;
+
+  @Field(() => Int)
+  deactivatedCount!: number;
+
+  @Field(() => Int)
+  failedCount!: number;
+
+  @Field(() => [BulkDeleteProductResult])
+  results!: BulkDeleteProductResult[];
+
+  @Field(() => String, { nullable: true })
+  error?: string | null;
 }

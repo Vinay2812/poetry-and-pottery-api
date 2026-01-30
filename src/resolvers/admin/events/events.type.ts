@@ -447,3 +447,48 @@ export class AdminLevelOption {
   @Field(() => String)
   label!: string;
 }
+
+@InputType()
+export class BulkDeleteEventsInput {
+  @Field(() => [String])
+  ids!: string[];
+}
+
+@ObjectType()
+export class BulkDeleteEventResult {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => Boolean)
+  success!: boolean;
+
+  @Field(() => String)
+  action!: string;
+
+  @Field(() => String, { nullable: true })
+  error?: string | null;
+}
+
+@ObjectType()
+export class AdminBulkDeleteEventsResponse {
+  @Field(() => Boolean)
+  success!: boolean;
+
+  @Field(() => Int)
+  totalRequested!: number;
+
+  @Field(() => Int)
+  deletedCount!: number;
+
+  @Field(() => Int)
+  cancelledCount!: number;
+
+  @Field(() => Int)
+  failedCount!: number;
+
+  @Field(() => [BulkDeleteEventResult])
+  results!: BulkDeleteEventResult[];
+
+  @Field(() => String, { nullable: true })
+  error?: string | null;
+}

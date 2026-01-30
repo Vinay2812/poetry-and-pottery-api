@@ -5,6 +5,7 @@ import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
+  AdminBulkDeleteProductsResponse,
   AdminMutationResponse,
   AdminProduct,
   AdminProductCollection,
@@ -13,6 +14,7 @@ import {
   AdminProductReviewsResponse,
   AdminProductsFilterInput,
   AdminProductsResponse,
+  BulkDeleteProductsInput,
   CreateProductInput,
   UpdateProductInput,
 } from "./products.type";
@@ -29,6 +31,7 @@ export class AdminProductsResolver {
     return tryCatchAsync(async () => {
       const search = filter?.search ?? "";
       const category = filter?.category;
+      const collectionId = filter?.collectionId;
       const isActive = filter?.isActive;
       const lowStock = filter?.lowStock;
       const page = filter?.page ?? 1;
@@ -38,6 +41,7 @@ export class AdminProductsResolver {
       const where: {
         OR?: { name?: object; slug?: object }[];
         product_categories?: { some: { category: string } };
+        collection_id?: number;
         is_active?: boolean;
         available_quantity?: { lte: number };
       } = {};
@@ -51,6 +55,10 @@ export class AdminProductsResolver {
 
       if (category) {
         where.product_categories = { some: { category } };
+      }
+
+      if (collectionId) {
+        where.collection_id = collectionId;
       }
 
       if (typeof isActive === "boolean") {
@@ -464,6 +472,72 @@ export class AdminProductsResolver {
       return {
         success: true,
         error: null,
+      };
+    });
+  }
+
+  @Mutation(() => AdminBulkDeleteProductsResponse)
+  @adminRequired()
+  async adminBulkDeleteProducts(
+    @Ctx() ctx: Context,
+    @Arg("input", () => BulkDeleteProductsInput) input: BulkDeleteProductsInput,
+  ): Promise<AdminBulkDeleteProductsResponse> {
+    return tryCatchAsync(async () => {
+      const results: AdminBulkDeleteProductsResponse["results"] = [];
+      let deletedCount = 0;
+      let deactivatedCount = 0;
+      let failedCount = 0;
+
+      for (const id of input.ids) {
+        try {
+          const purchasedCount = await ctx.prisma.purchasedProductItem.count({
+            where: { product_id: id },
+          });
+
+          if (purchasedCount > 0) {
+            await ctx.prisma.product.update({
+              where: { id },
+              data: { is_active: false },
+            });
+            results.push({
+              id,
+              success: true,
+              action: "deactivated",
+              error: "Product has orders and was deactivated instead",
+            });
+            deactivatedCount++;
+          } else {
+            await ctx.prisma.product.delete({
+              where: { id },
+            });
+            results.push({
+              id,
+              success: true,
+              action: "deleted",
+              error: null,
+            });
+            deletedCount++;
+          }
+        } catch (error) {
+          results.push({
+            id,
+            success: false,
+            action: "failed",
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+          failedCount++;
+        }
+      }
+
+      return {
+        success: failedCount === 0,
+        totalRequested: input.ids.length,
+        deletedCount,
+        deactivatedCount,
+        failedCount,
+        results,
+        error:
+          failedCount > 0 ? `${failedCount} products failed to process` : null,
       };
     });
   }

@@ -11,6 +11,7 @@ import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
+  AdminBulkDeleteEventsResponse,
   AdminEvent,
   AdminEventDetail,
   AdminEventMutationResponse,
@@ -20,6 +21,7 @@ import {
   AdminEventsResponse,
   AdminLevelOption,
   AdminStatusOption,
+  BulkDeleteEventsInput,
   CreateEventInput,
   UpdateEventInput,
 } from "./events.type";
@@ -497,6 +499,72 @@ export class AdminEventsResolver {
         success: true,
         eventId: review.event_id,
         error: null,
+      };
+    });
+  }
+
+  @Mutation(() => AdminBulkDeleteEventsResponse)
+  @adminRequired()
+  async adminBulkDeleteEvents(
+    @Ctx() ctx: Context,
+    @Arg("input", () => BulkDeleteEventsInput) input: BulkDeleteEventsInput,
+  ): Promise<AdminBulkDeleteEventsResponse> {
+    return tryCatchAsync(async () => {
+      const results: AdminBulkDeleteEventsResponse["results"] = [];
+      let deletedCount = 0;
+      let cancelledCount = 0;
+      let failedCount = 0;
+
+      for (const id of input.ids) {
+        try {
+          const registrationCount = await ctx.prisma.eventRegistration.count({
+            where: { event_id: id },
+          });
+
+          if (registrationCount > 0) {
+            await ctx.prisma.event.update({
+              where: { id },
+              data: { status: EventStatus.CANCELLED },
+            });
+            results.push({
+              id,
+              success: true,
+              action: "cancelled",
+              error: "Event has registrations and was cancelled instead",
+            });
+            cancelledCount++;
+          } else {
+            await ctx.prisma.event.delete({
+              where: { id },
+            });
+            results.push({
+              id,
+              success: true,
+              action: "deleted",
+              error: null,
+            });
+            deletedCount++;
+          }
+        } catch (error) {
+          results.push({
+            id,
+            success: false,
+            action: "failed",
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+          failedCount++;
+        }
+      }
+
+      return {
+        success: failedCount === 0,
+        totalRequested: input.ids.length,
+        deletedCount,
+        cancelledCount,
+        failedCount,
+        results,
+        error:
+          failedCount > 0 ? `${failedCount} events failed to process` : null,
       };
     });
   }
