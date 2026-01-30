@@ -165,6 +165,9 @@ export class AdminProductsFilterInput {
   @Field(() => Boolean, { nullable: true })
   lowStock?: boolean;
 
+  @Field(() => Boolean, { nullable: true })
+  outOfStock?: boolean;
+
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   page?: number;
 

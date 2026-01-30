@@ -40,6 +40,8 @@ export class AdminEventsResolver {
       const status = filter?.status;
       const level = filter?.level;
       const upcoming = filter?.upcoming;
+      const startDate = filter?.startDate;
+      const endDate = filter?.endDate;
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 20;
       const skip = (page - 1) * limit;
@@ -53,7 +55,7 @@ export class AdminEventsResolver {
         }[];
         status?: EventStatus;
         level?: EventLevel;
-        starts_at?: { gte: Date };
+        starts_at?: { gte?: Date; lte?: Date };
       } = {};
 
       if (search) {
@@ -73,7 +75,16 @@ export class AdminEventsResolver {
         where.level = level;
       }
 
-      if (upcoming) {
+      // Handle date filtering - startDate and endDate take precedence over upcoming
+      if (startDate || endDate) {
+        where.starts_at = {};
+        if (startDate) {
+          where.starts_at.gte = new Date(startDate);
+        }
+        if (endDate) {
+          where.starts_at.lte = new Date(endDate);
+        }
+      } else if (upcoming) {
         where.starts_at = { gte: new Date() };
       }
 

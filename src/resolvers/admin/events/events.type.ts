@@ -147,6 +147,12 @@ export class AdminEventsFilterInput {
   @Field(() => Boolean, { nullable: true })
   upcoming?: boolean;
 
+  @Field(() => GraphQLDateTime, { nullable: true })
+  startDate?: Date;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  endDate?: Date;
+
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   page?: number;
 

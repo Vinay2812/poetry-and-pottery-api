@@ -34,6 +34,7 @@ export class AdminProductsResolver {
       const collectionId = filter?.collectionId;
       const isActive = filter?.isActive;
       const lowStock = filter?.lowStock;
+      const outOfStock = filter?.outOfStock;
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 20;
       const skip = (page - 1) * limit;
@@ -43,7 +44,7 @@ export class AdminProductsResolver {
         product_categories?: { some: { category: string } };
         collection_id?: number;
         is_active?: boolean;
-        available_quantity?: { lte: number };
+        available_quantity?: { lte: number } | { equals: number };
       } = {};
 
       if (search) {
@@ -65,7 +66,9 @@ export class AdminProductsResolver {
         where.is_active = isActive;
       }
 
-      if (lowStock) {
+      if (outOfStock) {
+        where.available_quantity = { equals: 0 };
+      } else if (lowStock) {
         where.available_quantity = { lte: 5 };
       }
 

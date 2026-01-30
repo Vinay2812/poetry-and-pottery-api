@@ -265,10 +265,12 @@ type AdminEventReviewsResponse {
 }
 
 input AdminEventsFilterInput {
+  endDate: DateTime
   level: EventLevel
   limit: Int = 20
   page: Int = 1
   search: String
+  startDate: DateTime
   status: EventStatus
   upcoming: Boolean
 }
@@ -394,6 +396,7 @@ input AdminProductsFilterInput {
   isActive: Boolean
   limit: Int = 20
   lowStock: Boolean
+  outOfStock: Boolean
   page: Int = 1
   search: String
 }
