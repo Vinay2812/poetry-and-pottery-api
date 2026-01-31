@@ -35,6 +35,12 @@ const REVIEW_NON_AUTH_RESOLVERS: string[] = ["ProductReviews", "EventReviews"];
 
 const SEARCH_NON_AUTH_RESOLVERS: string[] = ["GlobalSearch"];
 
+const CUSTOMIZATION_NON_AUTH_RESOLVERS: string[] = [
+  "CustomizationCategories",
+  "CustomizationOptionsByCategory",
+  "CustomizationTypes",
+];
+
 const PUBLIC_CONTENT_NON_AUTH_RESOLVERS: string[] = [
   "PublicAboutContent",
   "PublicFAQContent",
@@ -52,6 +58,7 @@ const NON_AUTH_RESOLVERS: string[] = [
   ...EVENT_NON_AUTH_RESOLVERS,
   ...REVIEW_NON_AUTH_RESOLVERS,
   ...SEARCH_NON_AUTH_RESOLVERS,
+  ...CUSTOMIZATION_NON_AUTH_RESOLVERS,
   ...PUBLIC_CONTENT_NON_AUTH_RESOLVERS,
   "IntrospectionQuery",
 ];

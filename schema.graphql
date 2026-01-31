@@ -167,6 +167,52 @@ type AdminContentPageListItem {
   updated_at: DateTime!
 }
 
+type AdminCustomizationCategorySummary {
+  category: String!
+  count: Int!
+}
+
+type AdminCustomizationMutationResponse {
+  error: String
+  optionId: Int
+  success: Boolean!
+}
+
+type AdminCustomizationOption {
+  category: String!
+  created_at: DateTime!
+  id: Int!
+  is_active: Boolean!
+  name: String!
+  price_modifier: Int!
+  sort_order: Int!
+  type: String!
+  updated_at: DateTime!
+  value: String!
+}
+
+input AdminCustomizationOptionsFilterInput {
+  category: String
+  isActive: Boolean
+  limit: Int = 20
+  page: Int = 1
+  search: String
+  type: String
+}
+
+type AdminCustomizationOptionsResponse {
+  limit: Int!
+  options: [AdminCustomizationOption!]!
+  page: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+type AdminCustomizationTypeSummary {
+  count: Int!
+  type: String!
+}
+
 type AdminEvent {
   _count: AdminEventCount!
   available_seats: Int!
@@ -737,6 +783,16 @@ input CreateCollectionInput {
   starts_at: DateTime
 }
 
+input CreateCustomizationOptionInput {
+  category: String!
+  is_active: Boolean = true
+  name: String!
+  price_modifier: Int = 0
+  sort_order: Int = 0
+  type: String!
+  value: String!
+}
+
 input CreateEventInput {
   available_seats: Int!
   description: String!
@@ -801,6 +857,56 @@ type CreateReviewResponse {
   error: String
   review: Review
   success: Boolean!
+}
+
+input CustomizationCategoriesFilterInput {
+  limit: Int = 20
+  page: Int = 1
+  search: String
+}
+
+type CustomizationCategoriesResponse {
+  categories: [CustomizationCategory!]!
+  has_more: Boolean!
+  limit: Int!
+  page: Int!
+  total: Int!
+}
+
+type CustomizationCategory {
+  base_price: Int!
+  category: String!
+  image_url: String
+  options_count: Int!
+}
+
+type CustomizationOption {
+  category: String!
+  created_at: DateTime!
+  id: Int!
+  is_active: Boolean!
+  name: String!
+  price_modifier: Int!
+  sort_order: Int!
+  type: String!
+  updated_at: DateTime!
+  value: String!
+}
+
+type CustomizationOptionsByType {
+  options: [CustomizationOption!]!
+  type: String!
+}
+
+input CustomizationOptionsFilterInput {
+  category: String!
+  type: String
+}
+
+type CustomizationOptionsResponse {
+  category: String!
+  options_by_type: [CustomizationOptionsByType!]!
+  total_options: Int!
 }
 
 type DashboardStats {
@@ -1061,10 +1167,12 @@ type Mutation {
   adminBulkDeleteEvents(input: BulkDeleteEventsInput!): AdminBulkDeleteEventsResponse!
   adminBulkDeleteProducts(input: BulkDeleteProductsInput!): AdminBulkDeleteProductsResponse!
   adminCreateCollection(input: CreateCollectionInput!): AdminCollectionMutationResponse!
+  adminCreateCustomizationOption(input: CreateCustomizationOptionInput!): AdminCustomizationMutationResponse!
   adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
   adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!
   adminDeleteCategory(name: String!): AdminCategoryMutationResponse!
   adminDeleteCollection(id: Int!): AdminCollectionMutationResponse!
+  adminDeleteCustomizationOption(id: Int!): AdminCustomizationMutationResponse!
   adminDeleteEvent(id: String!): AdminEventMutationResponse!
   adminDeleteEventReview(reviewId: Int!): AdminEventMutationResponse!
   adminDeleteProduct(id: Int!): AdminMutationResponse!
@@ -1073,11 +1181,13 @@ type Mutation {
   adminRemoveProductFromCollection(productId: Int!): AdminCollectionMutationResponse!
   adminRenameCategory(newName: String!, oldName: String!): AdminCategoryMutationResponse!
   adminToggleContentPageActive(slug: String!): AdminContentMutationResponse!
+  adminToggleCustomizationOptionActive(id: Int!): AdminCustomizationMutationResponse!
   adminToggleProductActive(id: Int!): AdminMutationResponse!
   adminUpdateCategoryIcon(category: String!, icon: String!): AdminCategoryMutationResponse!
   adminUpdateCollection(id: Int!, input: UpdateCollectionInput!): AdminCollectionMutationResponse!
   adminUpdateContactInfo(input: UpdateContactInfoInput!): AdminSettingsMutationResponse!
   adminUpdateContentPage(input: UpdateContentPageInput!, slug: String!): AdminContentMutationResponse!
+  adminUpdateCustomizationOption(id: Int!, input: UpdateCustomizationOptionInput!): AdminCustomizationMutationResponse!
   adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
   adminUpdateEventStatus(id: String!, status: String!): AdminEventMutationResponse!
   adminUpdateHeroImages(input: UpdateHeroImagesInput!): AdminSettingsMutationResponse!
@@ -1372,6 +1482,10 @@ type Query {
   adminContactInfo: ContactInfo!
   adminContentPageBySlug(slug: String!): AdminContentPage
   adminContentPages: [AdminContentPageListItem!]!
+  adminCustomizationCategories: [AdminCustomizationCategorySummary!]!
+  adminCustomizationOptionById(id: Int!): AdminCustomizationOption
+  adminCustomizationOptions(filter: AdminCustomizationOptionsFilterInput): AdminCustomizationOptionsResponse!
+  adminCustomizationTypes: [AdminCustomizationTypeSummary!]!
   adminDashboardStats: DashboardStats!
   adminEventById(id: String!): AdminEventDetail
   adminEventLevelOptions: [AdminLevelOption!]!
@@ -1402,6 +1516,9 @@ type Query {
   categoriesWithImages: [CategoryWithImage!]!
   collections(limit: Int, page: Int): [CollectionBase!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
+  customizationCategories(filter: CustomizationCategoriesFilterInput): CustomizationCategoriesResponse!
+  customizationOptionsByCategory(filter: CustomizationOptionsFilterInput!): CustomizationOptionsResponse!
+  customizationTypes: [String!]!
   eventById(id: String!): EventDetail
   eventBySlug(slug: String!): EventDetail
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
@@ -1723,6 +1840,16 @@ input UpdateContactInfoInput {
 
 input UpdateContentPageInput {
   content: JSON!
+}
+
+input UpdateCustomizationOptionInput {
+  category: String
+  is_active: Boolean
+  name: String
+  price_modifier: Int
+  sort_order: Int
+  type: String
+  value: String
 }
 
 input UpdateEventInput {

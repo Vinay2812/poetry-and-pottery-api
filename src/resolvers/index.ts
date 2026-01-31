@@ -8,6 +8,7 @@ export * from "./reviews/reviews.resolver";
 export * from "./address/address.resolver";
 export * from "./newsletter/newsletter.resolver";
 export * from "./search/search.resolver";
+export * from "./customization/customization.resolver";
 
 // Admin resolvers
 export * from "./admin/analytics/analytics.resolver";
@@ -21,3 +22,4 @@ export * from "./admin/users/users.resolver";
 export * from "./admin/content/content.resolver";
 export * from "./admin/settings/settings.resolver";
 export * from "./admin/uploads/uploads.resolver";
+export * from "./admin/customization/customization.resolver";

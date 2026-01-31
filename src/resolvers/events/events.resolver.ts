@@ -953,12 +953,32 @@ export class EventsResolver {
       const limit = filter?.limit ?? 12;
       const now = new Date();
 
-      const where = {
+      const baseWhere = {
         user_id: userId,
         event: {
           ends_at: { lte: now },
         },
       };
+
+      const where = filter?.search
+        ? {
+            ...baseWhere,
+            AND: [
+              {
+                OR: [
+                  {
+                    event: {
+                      title: {
+                        contains: filter.search,
+                        mode: "insensitive" as const,
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          }
+        : baseWhere;
 
       const [registrations, total] = await Promise.all([
         ctx.prisma.eventRegistration.findMany({
