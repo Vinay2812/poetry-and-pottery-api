@@ -6,6 +6,7 @@ import {
   EventLevel as PrismaEventLevel,
   EventRegistrationStatus as PrismaEventRegistrationStatus,
   EventStatus as PrismaEventStatus,
+  EventType as PrismaEventType,
 } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
@@ -21,6 +22,7 @@ import {
   EventReviewLike,
   EventReviewUser,
   EventStatus,
+  EventType,
   EventWithUserContext,
   EventsFilterInput,
   EventsResponse,
@@ -44,12 +46,16 @@ function getUserIdOptional(ctx: Context): number | null {
   return ctx.user?.dbUserId ?? null;
 }
 
-function mapEventLevel(level: PrismaEventLevel): EventLevel {
-  return level as EventLevel;
+function mapEventLevel(level: PrismaEventLevel | null): EventLevel | null {
+  return level as EventLevel | null;
 }
 
 function mapEventStatus(status: PrismaEventStatus): EventStatus {
   return status as EventStatus;
+}
+
+function mapEventType(type: PrismaEventType): EventType {
+  return type as EventType;
 }
 
 function mapRegistrationStatus(
@@ -125,20 +131,23 @@ function mapEventBase(
     slug: string;
     title: string;
     description: string;
+    event_type: PrismaEventType;
     starts_at: Date;
     ends_at: Date;
     location: string;
     full_location: string;
     total_seats: number;
     available_seats: number;
-    instructor: string;
+    instructor: string | null;
     includes: string[];
     price: number;
     image: string;
     highlights: string[];
     gallery: string[];
     status: PrismaEventStatus;
-    level: PrismaEventLevel;
+    level: PrismaEventLevel | null;
+    performers: string[];
+    lineup_notes: string | null;
     created_at: Date;
     updated_at: Date;
     _count: {
@@ -153,6 +162,7 @@ function mapEventBase(
     slug: event.slug,
     title: event.title,
     description: event.description,
+    event_type: mapEventType(event.event_type),
     starts_at: event.starts_at,
     ends_at: event.ends_at,
     location: event.location,
@@ -167,6 +177,8 @@ function mapEventBase(
     gallery: event.gallery,
     status: mapEventStatus(event.status),
     level: mapEventLevel(event.level),
+    performers: event.performers,
+    lineup_notes: event.lineup_notes,
     created_at: event.created_at,
     updated_at: event.updated_at,
     registrations_count: event._count.event_registrations,
@@ -180,20 +192,23 @@ function mapRegistrationEvent(event: {
   slug: string;
   title: string;
   description: string;
+  event_type: PrismaEventType;
   starts_at: Date;
   ends_at: Date;
   location: string;
   full_location: string;
   total_seats: number;
   available_seats: number;
-  instructor: string;
+  instructor: string | null;
   includes: string[];
   price: number;
   image: string;
   highlights: string[];
   gallery: string[];
   status: PrismaEventStatus;
-  level: PrismaEventLevel;
+  level: PrismaEventLevel | null;
+  performers: string[];
+  lineup_notes: string | null;
   created_at: Date;
   updated_at: Date;
 }): RegistrationEvent {
@@ -202,6 +217,7 @@ function mapRegistrationEvent(event: {
     slug: event.slug,
     title: event.title,
     description: event.description,
+    event_type: mapEventType(event.event_type),
     starts_at: event.starts_at,
     ends_at: event.ends_at,
     location: event.location,
@@ -216,6 +232,8 @@ function mapRegistrationEvent(event: {
     gallery: event.gallery,
     status: mapEventStatus(event.status),
     level: mapEventLevel(event.level),
+    performers: event.performers,
+    lineup_notes: event.lineup_notes,
     created_at: event.created_at,
     updated_at: event.updated_at,
   };
@@ -256,20 +274,23 @@ function mapRegistration(
       slug: string;
       title: string;
       description: string;
+      event_type: PrismaEventType;
       starts_at: Date;
       ends_at: Date;
       location: string;
       full_location: string;
       total_seats: number;
       available_seats: number;
-      instructor: string;
+      instructor: string | null;
       includes: string[];
       price: number;
       image: string;
       highlights: string[];
       gallery: string[];
       status: PrismaEventStatus;
-      level: PrismaEventLevel;
+      level: PrismaEventLevel | null;
+      performers: string[];
+      lineup_notes: string | null;
       created_at: Date;
       updated_at: Date;
     };
@@ -320,6 +341,7 @@ export class EventsResolver {
       const where: {
         status?: PrismaEventStatus;
         level?: PrismaEventLevel;
+        event_type?: PrismaEventType;
         title?: { contains: string; mode: "insensitive" };
       } = {};
 
@@ -331,29 +353,40 @@ export class EventsResolver {
         where.level = filter.level as PrismaEventLevel;
       }
 
+      if (filter?.event_type) {
+        where.event_type = filter.event_type as PrismaEventType;
+      }
+
       if (filter?.search) {
         where.title = { contains: filter.search, mode: "insensitive" };
       }
 
-      const [events, total, levelsResult] = await Promise.all([
-        ctx.prisma.event.findMany({
-          where,
-          include: {
-            _count: {
-              select: { event_registrations: true, reviews: true },
+      const [events, total, levelsResult, eventTypesResult] = await Promise.all(
+        [
+          ctx.prisma.event.findMany({
+            where,
+            include: {
+              _count: {
+                select: { event_registrations: true, reviews: true },
+              },
+              reviews: { select: { rating: true } },
             },
-            reviews: { select: { rating: true } },
-          },
-          orderBy: { starts_at: "asc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.event.count({ where }),
-        ctx.prisma.event.findMany({
-          distinct: ["level"],
-          select: { level: true },
-        }),
-      ]);
+            orderBy: { starts_at: "asc" },
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          ctx.prisma.event.count({ where }),
+          ctx.prisma.event.findMany({
+            distinct: ["level"],
+            select: { level: true },
+            where: { level: { not: null } },
+          }),
+          ctx.prisma.event.findMany({
+            distinct: ["event_type"],
+            select: { event_type: true },
+          }),
+        ],
+      );
 
       // Calculate average rating for each event
       const eventsWithRating = events.map((event) => {
@@ -370,7 +403,10 @@ export class EventsResolver {
         total,
         page,
         total_pages: Math.ceil(total / limit),
-        levels: levelsResult.map((l) => mapEventLevel(l.level)),
+        levels: levelsResult
+          .filter((l) => l.level !== null)
+          .map((l) => mapEventLevel(l.level) as EventLevel),
+        event_types: eventTypesResult.map((t) => mapEventType(t.event_type)),
       };
     });
   }
@@ -520,6 +556,7 @@ export class EventsResolver {
         starts_at: { gte: Date };
         status: { in: PrismaEventStatus[] };
         id?: { notIn: string[] };
+        event_type?: PrismaEventType;
         title?: { contains: string; mode: "insensitive" };
       } = {
         starts_at: { gte: new Date() },
@@ -531,35 +568,49 @@ export class EventsResolver {
         where.id = { notIn: userEventRegistrationIds };
       }
 
+      if (filter?.event_type) {
+        where.event_type = filter.event_type as PrismaEventType;
+      }
+
       if (filter?.search) {
         where.title = { contains: filter.search, mode: "insensitive" };
       }
 
-      const [events, total, levelsResult] = await Promise.all([
-        ctx.prisma.event.findMany({
-          where,
-          include: {
-            _count: {
-              select: { event_registrations: true, reviews: true },
+      const [events, total, levelsResult, eventTypesResult] = await Promise.all(
+        [
+          ctx.prisma.event.findMany({
+            where,
+            include: {
+              _count: {
+                select: { event_registrations: true, reviews: true },
+              },
             },
-          },
-          orderBy: [{ available_seats: "desc" }, { starts_at: "asc" }],
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.event.count({ where }),
-        ctx.prisma.event.findMany({
-          distinct: ["level"],
-          select: { level: true },
-        }),
-      ]);
+            orderBy: [{ available_seats: "desc" }, { starts_at: "asc" }],
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          ctx.prisma.event.count({ where }),
+          ctx.prisma.event.findMany({
+            distinct: ["level"],
+            select: { level: true },
+            where: { level: { not: null } },
+          }),
+          ctx.prisma.event.findMany({
+            distinct: ["event_type"],
+            select: { event_type: true },
+          }),
+        ],
+      );
 
       return {
         data: events.map((event) => mapEventBase(event, null)),
         total,
         page,
         total_pages: Math.ceil(total / limit),
-        levels: levelsResult.map((l) => mapEventLevel(l.level)),
+        levels: levelsResult
+          .filter((l) => l.level !== null)
+          .map((l) => mapEventLevel(l.level) as EventLevel),
+        event_types: eventTypesResult.map((t) => mapEventType(t.event_type)),
       };
     });
   }
@@ -574,46 +625,58 @@ export class EventsResolver {
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
 
-      const baseWhere = {
-        OR: [
-          { status: PrismaEventStatus.COMPLETED },
-          { ends_at: { lt: new Date() } },
-        ],
-      };
+      const baseConditions: object[] = [
+        {
+          OR: [
+            { status: PrismaEventStatus.COMPLETED },
+            { ends_at: { lt: new Date() } },
+          ],
+        },
+      ];
 
-      const where = filter?.search
-        ? {
-            AND: [
-              baseWhere,
-              {
-                title: {
-                  contains: filter.search,
-                  mode: "insensitive" as const,
-                },
-              },
-            ],
-          }
-        : baseWhere;
-
-      const [events, total, levelsResult] = await Promise.all([
-        ctx.prisma.event.findMany({
-          where,
-          include: {
-            _count: {
-              select: { event_registrations: true, reviews: true },
-            },
-            reviews: { select: { rating: true } },
+      if (filter?.search) {
+        baseConditions.push({
+          title: {
+            contains: filter.search,
+            mode: "insensitive" as const,
           },
-          orderBy: { starts_at: "desc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.event.count({ where }),
-        ctx.prisma.event.findMany({
-          distinct: ["level"],
-          select: { level: true },
-        }),
-      ]);
+        });
+      }
+
+      if (filter?.event_type) {
+        baseConditions.push({
+          event_type: filter.event_type as PrismaEventType,
+        });
+      }
+
+      const where = { AND: baseConditions };
+
+      const [events, total, levelsResult, eventTypesResult] = await Promise.all(
+        [
+          ctx.prisma.event.findMany({
+            where,
+            include: {
+              _count: {
+                select: { event_registrations: true, reviews: true },
+              },
+              reviews: { select: { rating: true } },
+            },
+            orderBy: { starts_at: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          ctx.prisma.event.count({ where }),
+          ctx.prisma.event.findMany({
+            distinct: ["level"],
+            select: { level: true },
+            where: { level: { not: null } },
+          }),
+          ctx.prisma.event.findMany({
+            distinct: ["event_type"],
+            select: { event_type: true },
+          }),
+        ],
+      );
 
       // Calculate average rating for each event
       const eventsWithRating = events.map((event) => {
@@ -630,7 +693,10 @@ export class EventsResolver {
         total,
         page,
         total_pages: Math.ceil(total / limit),
-        levels: levelsResult.map((l) => mapEventLevel(l.level)),
+        levels: levelsResult
+          .filter((l) => l.level !== null)
+          .map((l) => mapEventLevel(l.level) as EventLevel),
+        event_types: eventTypesResult.map((t) => mapEventType(t.event_type)),
       };
     });
   }

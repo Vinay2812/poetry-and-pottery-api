@@ -6,6 +6,7 @@ import {
   EventLevel,
   EventRegistrationStatus,
   EventStatus,
+  EventType,
 } from "@/resolvers/events/events.type";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
@@ -17,6 +18,7 @@ import {
   AdminEventMutationResponse,
   AdminEventRegistrationsResponse,
   AdminEventReviewsResponse,
+  AdminEventTypeOption,
   AdminEventsFilterInput,
   AdminEventsResponse,
   AdminLevelOption,
@@ -39,6 +41,7 @@ export class AdminEventsResolver {
       const search = filter?.search ?? "";
       const status = filter?.status;
       const level = filter?.level;
+      const eventType = filter?.event_type;
       const upcoming = filter?.upcoming;
       const startDate = filter?.startDate;
       const endDate = filter?.endDate;
@@ -55,6 +58,7 @@ export class AdminEventsResolver {
         }[];
         status?: EventStatus;
         level?: EventLevel;
+        event_type?: EventType;
         starts_at?: { gte?: Date; lte?: Date };
       } = {};
 
@@ -73,6 +77,10 @@ export class AdminEventsResolver {
 
       if (level) {
         where.level = level;
+      }
+
+      if (eventType) {
+        where.event_type = eventType;
       }
 
       // Handle date filtering - startDate and endDate take precedence over upcoming
@@ -99,6 +107,7 @@ export class AdminEventsResolver {
             slug: true,
             title: true,
             description: true,
+            event_type: true,
             starts_at: true,
             ends_at: true,
             location: true,
@@ -109,6 +118,8 @@ export class AdminEventsResolver {
             image: true,
             status: true,
             level: true,
+            performers: true,
+            lineup_notes: true,
             created_at: true,
             _count: {
               select: {
@@ -145,6 +156,7 @@ export class AdminEventsResolver {
           slug: true,
           title: true,
           description: true,
+          event_type: true,
           starts_at: true,
           ends_at: true,
           location: true,
@@ -159,6 +171,8 @@ export class AdminEventsResolver {
           gallery: true,
           status: true,
           level: true,
+          performers: true,
+          lineup_notes: true,
           created_at: true,
           updated_at: true,
           _count: {
@@ -295,6 +309,15 @@ export class AdminEventsResolver {
     ];
   }
 
+  @Query(() => [AdminEventTypeOption])
+  @adminRequired()
+  async adminEventTypeOptions(): Promise<AdminEventTypeOption[]> {
+    return [
+      { value: EventType.POTTERY_WORKSHOP, label: "Pottery Workshop" },
+      { value: EventType.OPEN_MIC, label: "Open Mic" },
+    ];
+  }
+
   @Mutation(() => AdminEventMutationResponse)
   @adminRequired()
   async adminCreateEvent(
@@ -306,6 +329,7 @@ export class AdminEventsResolver {
         title,
         slug,
         description,
+        event_type = EventType.POTTERY_WORKSHOP,
         starts_at,
         ends_at,
         location,
@@ -319,7 +343,9 @@ export class AdminEventsResolver {
         highlights = [],
         gallery = [],
         status = EventStatus.UPCOMING,
-        level = EventLevel.BEGINNER,
+        level,
+        performers = [],
+        lineup_notes,
       } = input;
 
       // Validate slug uniqueness
@@ -345,11 +371,23 @@ export class AdminEventsResolver {
         };
       }
 
+      // Validate type-specific required fields
+      if (event_type === EventType.POTTERY_WORKSHOP) {
+        if (!instructor) {
+          return {
+            success: false,
+            eventId: null,
+            error: "Instructor is required for pottery workshops",
+          };
+        }
+      }
+
       const event = await ctx.prisma.event.create({
         data: {
           title,
           slug,
           description,
+          event_type,
           starts_at,
           ends_at,
           location,
@@ -364,6 +402,8 @@ export class AdminEventsResolver {
           gallery,
           status,
           level,
+          performers,
+          lineup_notes,
         },
       });
 

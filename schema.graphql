@@ -173,11 +173,14 @@ type AdminEvent {
   created_at: DateTime!
   description: String!
   ends_at: DateTime!
+  event_type: EventType!
   id: String!
   image: String!
-  instructor: String!
-  level: EventLevel!
+  instructor: String
+  level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]!
   price: Float!
   slug: String!
   starts_at: DateTime!
@@ -197,15 +200,18 @@ type AdminEventDetail {
   created_at: DateTime!
   description: String!
   ends_at: DateTime!
+  event_type: EventType!
   full_location: String!
   gallery: [String!]!
   highlights: [String!]!
   id: String!
   image: String!
   includes: [String!]!
-  instructor: String!
-  level: EventLevel!
+  instructor: String
+  level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]!
   price: Float!
   slug: String!
   starts_at: DateTime!
@@ -264,8 +270,14 @@ type AdminEventReviewsResponse {
   total: Int!
 }
 
+type AdminEventTypeOption {
+  label: String!
+  value: String!
+}
+
 input AdminEventsFilterInput {
   endDate: DateTime
+  event_type: EventType
   level: EventLevel
   limit: Int = 20
   page: Int = 1
@@ -729,14 +741,17 @@ input CreateEventInput {
   available_seats: Int!
   description: String!
   ends_at: DateTime!
+  event_type: EventType
   full_location: String!
   gallery: [String!]
   highlights: [String!]
   image: String!
   includes: [String!]
-  instructor: String!
+  instructor: String
   level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]
   price: Float!
   slug: String!
   starts_at: DateTime!
@@ -814,15 +829,18 @@ type EventBase {
   created_at: DateTime!
   description: String!
   ends_at: DateTime!
+  event_type: EventType!
   full_location: String!
   gallery: [String!]!
   highlights: [String!]!
   id: String!
   image: String!
   includes: [String!]!
-  instructor: String!
-  level: EventLevel!
+  instructor: String
+  level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]!
   price: Int!
   registrations_count: Int!
   reviews_count: Int!
@@ -840,16 +858,19 @@ type EventDetail {
   created_at: DateTime!
   description: String!
   ends_at: DateTime!
+  event_type: EventType!
   full_location: String!
   gallery: [String!]!
   highlights: [String!]!
   id: String!
   image: String!
   includes: [String!]!
-  instructor: String!
+  instructor: String
   is_registered: Boolean!
-  level: EventLevel!
+  level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]!
   price: Int!
   registrations_count: Int!
   reviews: [EventReview!]!
@@ -934,6 +955,12 @@ enum EventStatus {
   UPCOMING
 }
 
+"""The type of event"""
+enum EventType {
+  OPEN_MIC
+  POTTERY_WORKSHOP
+}
+
 type EventWithUserContext {
   current_user_id: Int
   event: EventDetail!
@@ -942,6 +969,7 @@ type EventWithUserContext {
 }
 
 input EventsFilterInput {
+  event_type: EventType
   level: EventLevel
   limit: Int = 12
   page: Int = 1
@@ -951,6 +979,7 @@ input EventsFilterInput {
 
 type EventsResponse {
   data: [EventBase!]!
+  event_types: [EventType!]!
   levels: [EventLevel!]!
   page: Int!
   total: Int!
@@ -1349,6 +1378,7 @@ type Query {
   adminEventRegistrations(eventId: String!): AdminEventRegistrationsResponse!
   adminEventReviews(eventId: String!): AdminEventReviewsResponse!
   adminEventStatusOptions: [AdminStatusOption!]!
+  adminEventTypeOptions: [AdminEventTypeOption!]!
   adminEvents(filter: AdminEventsFilterInput): AdminEventsResponse!
   adminHeroImages: HeroImages!
   adminLowStockProducts(limit: Int = 10): [LowStockProduct!]!
@@ -1464,15 +1494,18 @@ type RegistrationEvent {
   created_at: DateTime!
   description: String!
   ends_at: DateTime!
+  event_type: EventType!
   full_location: String!
   gallery: [String!]!
   highlights: [String!]!
   id: String!
   image: String!
   includes: [String!]!
-  instructor: String!
-  level: EventLevel!
+  instructor: String
+  level: EventLevel
+  lineup_notes: String
   location: String!
+  performers: [String!]!
   price: Int!
   slug: String!
   starts_at: DateTime!
@@ -1696,6 +1729,7 @@ input UpdateEventInput {
   available_seats: Int
   description: String
   ends_at: DateTime
+  event_type: EventType
   full_location: String
   gallery: [String!]
   highlights: [String!]
@@ -1703,7 +1737,9 @@ input UpdateEventInput {
   includes: [String!]
   instructor: String
   level: EventLevel
+  lineup_notes: String
   location: String
+  performers: [String!]
   price: Float
   slug: String
   starts_at: DateTime

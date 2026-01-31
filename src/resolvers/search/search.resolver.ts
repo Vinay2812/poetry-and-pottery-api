@@ -1,7 +1,10 @@
 import { Arg, Ctx, Query, Resolver } from "type-graphql";
 
 import { prisma } from "@/lib/prisma";
-import { EventStatus as PrismaEventStatus } from "@/prisma/generated/client";
+import {
+  EventStatus as PrismaEventStatus,
+  EventType as PrismaEventType,
+} from "@/prisma/generated/client";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
@@ -9,6 +12,7 @@ import {
   EventLevel,
   EventRegistrationStatus,
   EventStatus,
+  EventType,
 } from "../events/events.type";
 import { OrderStatus } from "../orders/orders.type";
 import { GlobalSearchInput, GlobalSearchResponse } from "./search.type";
@@ -24,13 +28,18 @@ function mapPrismaEventStatus(status: PrismaEventStatus): EventStatus {
   return statusMap[status];
 }
 
-function mapPrismaEventLevel(level: string): EventLevel {
+function mapPrismaEventLevel(level: string | null): EventLevel | null {
+  if (!level) return null;
   const levelMap: Record<string, EventLevel> = {
     BEGINNER: EventLevel.BEGINNER,
     INTERMEDIATE: EventLevel.INTERMEDIATE,
     ADVANCED: EventLevel.ADVANCED,
   };
-  return levelMap[level] ?? EventLevel.BEGINNER;
+  return levelMap[level] ?? null;
+}
+
+function mapPrismaEventType(type: PrismaEventType): EventType {
+  return type as EventType;
 }
 
 function mapPrismaOrderStatus(status: string): OrderStatus {
@@ -149,6 +158,7 @@ export class SearchResolver {
               slug: event.slug,
               title: event.title,
               description: event.description,
+              event_type: mapPrismaEventType(event.event_type),
               starts_at: event.starts_at,
               ends_at: event.ends_at,
               location: event.location,
@@ -163,6 +173,8 @@ export class SearchResolver {
               gallery: event.gallery,
               status: mapPrismaEventStatus(event.status),
               level: mapPrismaEventLevel(event.level),
+              performers: event.performers,
+              lineup_notes: event.lineup_notes,
               created_at: event.created_at,
               updated_at: event.updated_at,
               registrations_count: event._count.event_registrations,

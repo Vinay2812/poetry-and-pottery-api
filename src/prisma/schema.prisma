@@ -166,25 +166,35 @@ enum EventStatus {
   COMPLETED
 }
 
+enum EventType {
+  POTTERY_WORKSHOP
+  OPEN_MIC
+}
+
 model Event {
   id              String      @id @default(nanoid(16))
   slug            String      @unique @db.Text
   title           String
   description     String
+  event_type      EventType   @default(POTTERY_WORKSHOP)
   starts_at       DateTime
   ends_at         DateTime
   location        String
   full_location   String
   total_seats     Int         @default(10)
   available_seats Int         @default(10)
-  instructor      String
+  instructor      String?
   includes        String[]
   price           Int
   image           String
   highlights      String[]
   gallery         String[]
   status          EventStatus @default(UPCOMING)
-  level           EventLevel  @default(BEGINNER)
+  level           EventLevel?
+
+  // Open Mic specific fields
+  performers   String[] @default([])
+  lineup_notes String?
 
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
@@ -194,6 +204,7 @@ model Event {
 
   @@index([starts_at])
   @@index([ends_at])
+  @@index([event_type])
   @@map("events")
 }
 

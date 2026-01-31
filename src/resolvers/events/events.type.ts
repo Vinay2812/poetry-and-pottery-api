@@ -33,6 +33,17 @@ registerEnumType(EventStatus, {
   description: "The status of an event",
 });
 
+// Register EventType enum for GraphQL
+export enum EventType {
+  POTTERY_WORKSHOP = "POTTERY_WORKSHOP",
+  OPEN_MIC = "OPEN_MIC",
+}
+
+registerEnumType(EventType, {
+  name: "EventType",
+  description: "The type of event",
+});
+
 // Register EventRegistrationStatus enum for GraphQL
 export enum EventRegistrationStatus {
   PENDING = "PENDING",
@@ -122,6 +133,9 @@ export class EventBase {
   @Field(() => String)
   description!: string;
 
+  @Field(() => EventType)
+  event_type!: EventType;
+
   @Field(() => GraphQLDateTime)
   starts_at!: Date;
 
@@ -140,8 +154,8 @@ export class EventBase {
   @Field(() => Int)
   available_seats!: number;
 
-  @Field(() => String)
-  instructor!: string;
+  @Field(() => String, { nullable: true })
+  instructor?: string | null;
 
   @Field(() => [String])
   includes!: string[];
@@ -161,8 +175,15 @@ export class EventBase {
   @Field(() => EventStatus)
   status!: EventStatus;
 
-  @Field(() => EventLevel)
-  level!: EventLevel;
+  @Field(() => EventLevel, { nullable: true })
+  level?: EventLevel | null;
+
+  // Open Mic specific fields
+  @Field(() => [String])
+  performers!: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string | null;
 
   @Field(() => GraphQLDateTime)
   created_at!: Date;
@@ -208,6 +229,9 @@ export class EventsResponse {
 
   @Field(() => [EventLevel])
   levels!: EventLevel[];
+
+  @Field(() => [EventType])
+  event_types!: EventType[];
 }
 
 @InputType()
@@ -223,6 +247,9 @@ export class EventsFilterInput {
 
   @Field(() => EventLevel, { nullable: true })
   level?: EventLevel;
+
+  @Field(() => EventType, { nullable: true })
+  event_type?: EventType;
 
   @Field(() => String, { nullable: true })
   search?: string;
@@ -259,6 +286,9 @@ export class RegistrationEvent {
   @Field(() => String)
   description!: string;
 
+  @Field(() => EventType)
+  event_type!: EventType;
+
   @Field(() => GraphQLDateTime)
   starts_at!: Date;
 
@@ -277,8 +307,8 @@ export class RegistrationEvent {
   @Field(() => Int)
   available_seats!: number;
 
-  @Field(() => String)
-  instructor!: string;
+  @Field(() => String, { nullable: true })
+  instructor?: string | null;
 
   @Field(() => [String])
   includes!: string[];
@@ -298,8 +328,15 @@ export class RegistrationEvent {
   @Field(() => EventStatus)
   status!: EventStatus;
 
-  @Field(() => EventLevel)
-  level!: EventLevel;
+  @Field(() => EventLevel, { nullable: true })
+  level?: EventLevel | null;
+
+  // Open Mic specific fields
+  @Field(() => [String])
+  performers!: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string | null;
 
   @Field(() => GraphQLDateTime)
   created_at!: Date;

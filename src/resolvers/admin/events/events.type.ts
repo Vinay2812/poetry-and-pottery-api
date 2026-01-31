@@ -5,6 +5,7 @@ import {
   EventLevel,
   EventRegistrationStatus,
   EventStatus,
+  EventType,
 } from "@/resolvers/events/events.type";
 
 @ObjectType()
@@ -30,6 +31,9 @@ export class AdminEvent {
   @Field(() => String)
   description!: string;
 
+  @Field(() => EventType)
+  event_type!: EventType;
+
   @Field(() => GraphQLDateTime)
   starts_at!: Date;
 
@@ -45,8 +49,8 @@ export class AdminEvent {
   @Field(() => Int)
   available_seats!: number;
 
-  @Field(() => String)
-  instructor!: string;
+  @Field(() => String, { nullable: true })
+  instructor?: string | null;
 
   @Field(() => Float)
   price!: number;
@@ -57,8 +61,15 @@ export class AdminEvent {
   @Field(() => EventStatus)
   status!: EventStatus;
 
-  @Field(() => EventLevel)
-  level!: EventLevel;
+  @Field(() => EventLevel, { nullable: true })
+  level?: EventLevel | null;
+
+  // Open Mic specific fields
+  @Field(() => [String])
+  performers!: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string | null;
 
   @Field(() => GraphQLDateTime)
   created_at!: Date;
@@ -81,6 +92,9 @@ export class AdminEventDetail {
   @Field(() => String)
   description!: string;
 
+  @Field(() => EventType)
+  event_type!: EventType;
+
   @Field(() => GraphQLDateTime)
   starts_at!: Date;
 
@@ -99,8 +113,8 @@ export class AdminEventDetail {
   @Field(() => Int)
   available_seats!: number;
 
-  @Field(() => String)
-  instructor!: string;
+  @Field(() => String, { nullable: true })
+  instructor?: string | null;
 
   @Field(() => [String])
   includes!: string[];
@@ -120,8 +134,15 @@ export class AdminEventDetail {
   @Field(() => EventStatus)
   status!: EventStatus;
 
-  @Field(() => EventLevel)
-  level!: EventLevel;
+  @Field(() => EventLevel, { nullable: true })
+  level?: EventLevel | null;
+
+  // Open Mic specific fields
+  @Field(() => [String])
+  performers!: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string | null;
 
   @Field(() => GraphQLDateTime)
   created_at!: Date;
@@ -143,6 +164,9 @@ export class AdminEventsFilterInput {
 
   @Field(() => EventLevel, { nullable: true })
   level?: EventLevel;
+
+  @Field(() => EventType, { nullable: true })
+  event_type?: EventType;
 
   @Field(() => Boolean, { nullable: true })
   upcoming?: boolean;
@@ -189,6 +213,9 @@ export class CreateEventInput {
   @Field(() => String)
   description!: string;
 
+  @Field(() => EventType, { nullable: true })
+  event_type?: EventType;
+
   @Field(() => GraphQLDateTime)
   starts_at!: Date;
 
@@ -207,8 +234,8 @@ export class CreateEventInput {
   @Field(() => Int)
   available_seats!: number;
 
-  @Field(() => String)
-  instructor!: string;
+  @Field(() => String, { nullable: true })
+  instructor?: string;
 
   @Field(() => [String], { nullable: true })
   includes?: string[];
@@ -230,6 +257,13 @@ export class CreateEventInput {
 
   @Field(() => EventLevel, { nullable: true })
   level?: EventLevel;
+
+  // Open Mic specific fields
+  @Field(() => [String], { nullable: true })
+  performers?: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string;
 }
 
 @InputType()
@@ -242,6 +276,9 @@ export class UpdateEventInput {
 
   @Field(() => String, { nullable: true })
   description?: string;
+
+  @Field(() => EventType, { nullable: true })
+  event_type?: EventType;
 
   @Field(() => GraphQLDateTime, { nullable: true })
   starts_at?: Date;
@@ -284,6 +321,13 @@ export class UpdateEventInput {
 
   @Field(() => EventLevel, { nullable: true })
   level?: EventLevel;
+
+  // Open Mic specific fields
+  @Field(() => [String], { nullable: true })
+  performers?: string[];
+
+  @Field(() => String, { nullable: true })
+  lineup_notes?: string;
 }
 
 @ObjectType()
@@ -447,6 +491,15 @@ export class AdminStatusOption {
 
 @ObjectType()
 export class AdminLevelOption {
+  @Field(() => String)
+  value!: string;
+
+  @Field(() => String)
+  label!: string;
+}
+
+@ObjectType()
+export class AdminEventTypeOption {
   @Field(() => String)
   value!: string;
 
