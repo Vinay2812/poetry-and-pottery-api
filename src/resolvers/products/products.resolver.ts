@@ -275,55 +275,83 @@ export class ProductsResolver {
           include: { _count: { select: { products: true } } },
         },
       };
+      type ProductWithRelations = Prisma.ProductGetPayload<{
+        include: typeof productInclude;
+      }>;
 
-      // For featured sorting with user preferences, use a two-phase approach
-      let products;
+      const featuredOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
+        { purchased_products: { _count: "desc" } },
+        { id: "desc" },
+      ];
+      const standardOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
+        getOrderBy(filter.order_by),
+        { id: "desc" },
+      ];
+
+      // Featured sorting with user preferences: build a stable ordered ID list
+      let products: ProductWithRelations[];
       if (isFeaturedSort && userPreferredCategories.length > 0) {
-        // Phase 1: Get products in preferred categories
         const preferredWhere = {
           ...where,
           product_categories: {
             some: { category: { in: userPreferredCategories } },
           },
         };
-        const preferredProducts = await ctx.prisma.product.findMany({
+
+        const preferredIdsResult = await ctx.prisma.product.findMany({
           where: preferredWhere,
-          include: productInclude,
-          orderBy: { purchased_products: { _count: "desc" } },
-          skip: offset,
-          take: limit,
+          select: { id: true },
+          orderBy: featuredOrderBy,
+          take: offset + limit,
         });
+        const preferredIds = preferredIdsResult.map((item) => item.id);
 
-        // If we have enough products from preferred categories, use them
-        if (preferredProducts.length >= limit) {
-          products = preferredProducts;
+        const otherIdsResult = await ctx.prisma.product.findMany({
+          where: {
+            ...where,
+            ...(preferredIds.length > 0 && { id: { notIn: preferredIds } }),
+          },
+          select: { id: true },
+          orderBy: featuredOrderBy,
+          take: offset + limit,
+        });
+        const otherIds = otherIdsResult.map((item) => item.id);
+
+        const orderedIds: number[] = [];
+        const seenIds = new Set<number>();
+        for (const id of preferredIds) {
+          if (seenIds.has(id)) continue;
+          seenIds.add(id);
+          orderedIds.push(id);
+        }
+        for (const id of otherIds) {
+          if (seenIds.has(id)) continue;
+          seenIds.add(id);
+          orderedIds.push(id);
+        }
+        const pageIds = orderedIds.slice(offset, offset + limit);
+
+        if (pageIds.length === 0) {
+          products = [];
         } else {
-          // Phase 2: Fill remaining slots with other products
-          const preferredIds = preferredProducts.map((p) => p.id);
-          const remainingLimit = limit - preferredProducts.length;
-          const remainingOffset = Math.max(
-            0,
-            offset - preferredProducts.length,
-          );
-
-          const otherProducts = await ctx.prisma.product.findMany({
-            where: {
-              ...where,
-              id: { notIn: preferredIds },
-            },
+          const pageProducts = await ctx.prisma.product.findMany({
+            where: { id: { in: pageIds } },
             include: productInclude,
-            orderBy: { purchased_products: { _count: "desc" } },
-            skip: remainingOffset,
-            take: remainingLimit,
           });
-          products = [...preferredProducts, ...otherProducts];
+          const productMap = new Map(
+            pageProducts.map((product) => [product.id, product]),
+          );
+          products = pageIds.flatMap((id) => {
+            const product = productMap.get(id);
+            return product ? [product] : [];
+          });
         }
       } else {
         // Standard ordering
         products = await ctx.prisma.product.findMany({
           where,
           include: productInclude,
-          orderBy: getOrderBy(filter.order_by),
+          orderBy: standardOrderBy,
           skip: offset,
           take: limit,
         });
