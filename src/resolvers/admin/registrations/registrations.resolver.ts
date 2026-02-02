@@ -62,6 +62,18 @@ function getIntermediateStatuses(
   return MAIN_FLOW.slice(currentIndex + 1, newIndex + 1);
 }
 
+function getStatusesUpTo(
+  status: EventRegistrationStatus,
+): EventRegistrationStatus[] {
+  const statusIndex = MAIN_FLOW.indexOf(status);
+  if (statusIndex === -1) return [];
+  return MAIN_FLOW.slice(0, statusIndex + 1);
+}
+
+type RegistrationTimestampSnapshot = Record<TimestampField, Date | null> & {
+  status: EventRegistrationStatus;
+};
+
 interface RegistrationUpdateData {
   status: EventRegistrationStatus;
   request_at?: Date | null;
@@ -69,6 +81,32 @@ interface RegistrationUpdateData {
   paid_at?: Date | null;
   confirmed_at?: Date | null;
   cancelled_at?: Date | null;
+}
+
+function ensureMainFlowTimestamps(
+  registration: RegistrationTimestampSnapshot,
+  newStatus: EventRegistrationStatus,
+  updateData: RegistrationUpdateData,
+  now: Date,
+) {
+  const statusesToEnsure = getStatusesUpTo(newStatus);
+  if (statusesToEnsure.length === 0) return;
+
+  for (const status of statusesToEnsure) {
+    const field = STATUS_TIMESTAMP_FIELDS[status];
+    if (!field) continue;
+
+    const hasUpdate = Object.prototype.hasOwnProperty.call(updateData, field);
+    const updatedValue = hasUpdate ? updateData[field] : undefined;
+    const existingValue = registration[field];
+
+    if (
+      updatedValue === null ||
+      (updatedValue === undefined && existingValue == null)
+    ) {
+      updateData[field] = now;
+    }
+  }
 }
 
 @Resolver()
@@ -91,6 +129,11 @@ export class AdminRegistrationsResolver {
           user_id: true,
           event_id: true,
           seats_reserved: true,
+          request_at: true,
+          approved_at: true,
+          paid_at: true,
+          confirmed_at: true,
+          cancelled_at: true,
         },
       });
 
@@ -153,6 +196,8 @@ export class AdminRegistrationsResolver {
           updateData.confirmed_at = null;
         }
       }
+
+      ensureMainFlowTimestamps(registration, newStatus, updateData, now);
 
       // Handle seat availability for cancellation and confirmation changes
       const wasConfirmed =

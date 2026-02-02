@@ -42,7 +42,7 @@ const STATUS_TIMESTAMP_FIELDS: Record<OrderStatus, TimestampField | null> = {
 };
 
 // Main flow statuses (excludes terminal states)
-const MAIN_FLOW = ORDER_STATUS_SEQUENCE.slice(0, 5); // PENDING to DELIVERED
+const MAIN_FLOW = ORDER_STATUS_SEQUENCE.slice(0, 6); // PENDING to CANCELLED
 
 // Get statuses that come after the given status
 function getLaterStatuses(status: OrderStatus): OrderStatus[] {
@@ -68,6 +68,16 @@ function getIntermediateStatuses(
   return MAIN_FLOW.slice(currentIndex + 1, newIndex + 1);
 }
 
+function getStatusesUpTo(status: OrderStatus): OrderStatus[] {
+  const statusIndex = MAIN_FLOW.indexOf(status);
+  if (statusIndex === -1) return [];
+  return MAIN_FLOW.slice(0, statusIndex + 1);
+}
+
+type OrderTimestampSnapshot = Record<TimestampField, Date | null> & {
+  status: OrderStatus;
+};
+
 interface OrderUpdateData {
   status: OrderStatus;
   request_at?: Date | null;
@@ -78,6 +88,32 @@ interface OrderUpdateData {
   cancelled_at?: Date | null;
   returned_at?: Date | null;
   refunded_at?: Date | null;
+}
+
+function ensureMainFlowTimestamps(
+  order: OrderTimestampSnapshot,
+  newStatus: OrderStatus,
+  updateData: OrderUpdateData,
+  now: Date,
+) {
+  const statusesToEnsure = getStatusesUpTo(newStatus);
+  if (statusesToEnsure.length === 0) return;
+
+  for (const status of statusesToEnsure) {
+    const field = STATUS_TIMESTAMP_FIELDS[status];
+    if (!field) continue;
+
+    const hasUpdate = Object.prototype.hasOwnProperty.call(updateData, field);
+    const updatedValue = hasUpdate ? updateData[field] : undefined;
+    const existingValue = order[field];
+
+    if (
+      updatedValue === null ||
+      (updatedValue === undefined && existingValue == null)
+    ) {
+      updateData[field] = now;
+    }
+  }
 }
 
 @Resolver()
@@ -94,7 +130,19 @@ export class AdminOrdersResolver {
 
       const order = await ctx.prisma.productOrder.findUnique({
         where: { id: orderId },
-        select: { id: true, status: true, user_id: true },
+        select: {
+          id: true,
+          status: true,
+          user_id: true,
+          request_at: true,
+          approved_at: true,
+          paid_at: true,
+          shipped_at: true,
+          delivered_at: true,
+          cancelled_at: true,
+          returned_at: true,
+          refunded_at: true,
+        },
       });
 
       if (!order) {
@@ -148,6 +196,8 @@ export class AdminOrdersResolver {
           updateData.refunded_at = null;
         }
       }
+
+      ensureMainFlowTimestamps(order, newStatus, updateData, now);
 
       await ctx.prisma.productOrder.update({
         where: { id: orderId },
