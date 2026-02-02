@@ -361,7 +361,6 @@ export class ProductsResolver {
 
       // Build where clause for price stats (respects other filters but not price filter)
       const priceStatsWhere = {
-        is_active: true,
         ...(filter.search && {
           OR: [
             { name: { contains: filter.search, mode: "insensitive" as const } },
