@@ -1,7 +1,5 @@
-/**
- * Script to update the About page content with real business information
- * Run with: bun run src/scripts/update-about-content.ts
- */
+// Script to update the About page content with real business information
+// Run with: bun run src/scripts/update-about-content.ts
 import { prisma } from "../lib/prisma";
 
 const aboutContent: PrismaJson.AboutPageContent = {

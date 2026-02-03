@@ -18,10 +18,8 @@ import {
   UpdateContentPageInput,
 } from "./content.type";
 
-/**
- * Deep merge content with defaults - if a field is missing or empty in content,
- * use the value from defaults
- */
+// Deep merge content with defaults - if a field is missing or empty in content,
+// use the value from defaults
 function mergeWithDefaults<T extends ContentPageContent>(
   content: Partial<T> | null | undefined,
   defaults: T,

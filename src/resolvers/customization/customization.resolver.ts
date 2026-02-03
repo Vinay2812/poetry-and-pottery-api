@@ -15,10 +15,8 @@ import {
 
 @Resolver()
 export class CustomizationResolver {
-  /**
-   * Get all categories that have customization options
-   * Supports search and pagination for infinite scroll
-   */
+  // Get all categories that have customization options
+  // Supports search and pagination for infinite scroll
   @Query(() => CustomizationCategoriesResponse)
   async customizationCategories(
     @Ctx() ctx: Context,
@@ -91,10 +89,8 @@ export class CustomizationResolver {
     });
   }
 
-  /**
-   * Get all customization options for a specific category
-   * Grouped by type (SIZE, COLOR, SHAPE, TEXT, etc.)
-   */
+  // Get all customization options for a specific category
+  // Grouped by type (SIZE, COLOR, SHAPE, TEXT, etc.)
   @Query(() => CustomizationOptionsResponse)
   async customizationOptionsByCategory(
     @Ctx() ctx: Context,
