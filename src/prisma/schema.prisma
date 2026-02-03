@@ -111,29 +111,50 @@ model ProductCategory {
   @@map("product_categories")
 }
 
-model CustomizationOption {
-  id             Int     @id @default(autoincrement())
-  category       String // Links to ProductCategory.category (e.g., "Mugs", "Vases")
-  type           String // Flexible: "SIZE", "COLOR", "SHAPE", "TEXT", or any new type
-  name           String // Display name: "Small", "150ml", "Ocean Blue"
-  value          String // Internal value: "S", "150", "#4682B4"
-  price_modifier Int     @default(0) // Price adjustment in rupees
-  sort_order     Int     @default(0)
-  is_active      Boolean @default(true)
+model CustomizeCategory {
+  id         Int     @id @default(autoincrement())
+  category   String  @unique
+  base_price Int     @default(0)
+  image_url  String?
+  is_active  Boolean @default(true)
 
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  @@unique([category, type, value]) // Prevent duplicate options
-  @@index([category])
+  options CustomizationOption[]
+
+  @@index([is_active])
+  @@map("customize_categories")
+}
+
+model CustomizationOption {
+  id                    Int     @id @default(autoincrement())
+  customize_category_id Int
+  type                  String // Flexible: "SIZE", "COLOR", "SHAPE", "TEXT", or any new type
+  name                  String // Display name: "Small", "150ml", "Ocean Blue"
+  value                 String // Internal value: "S", "150", "#4682B4"
+  price_modifier        Int     @default(0) // Price adjustment in rupees
+  sort_order            Int     @default(0)
+  is_active             Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  customize_category CustomizeCategory @relation(fields: [customize_category_id], references: [id], onDelete: Cascade)
+
+  @@unique([customize_category_id, type, value]) // Prevent duplicate options (new)
+  @@index([customize_category_id])
   @@index([type])
   @@index([is_active])
+  @@index([value])
+  @@index([price_modifier])
+  @@index([sort_order])
   @@map("customization_options")
 }
 
 model Collection {
-  id          Int       @id @default(autoincrement())
-  slug        String    @unique @db.Text
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique @db.Text
   name        String
   description String?
   image_url   String?
