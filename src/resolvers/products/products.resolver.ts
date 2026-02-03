@@ -61,7 +61,6 @@ function mapToProductBase(
     color_name: string;
     is_active: boolean;
     reviews?: { rating: number }[];
-    wishlists?: { id: number }[];
     collection?: CollectionWithCount | null;
   },
   userWishlistIds?: Set<number>,
@@ -86,9 +85,7 @@ function mapToProductBase(
     color_name: product.color_name,
     reviews_count: reviewsCount,
     avg_rating: avgRating,
-    in_wishlist: userWishlistIds
-      ? userWishlistIds.has(product.id)
-      : (product.wishlists?.length ?? 0) > 0,
+    in_wishlist: userWishlistIds ? userWishlistIds.has(product.id) : false,
     is_active: product.is_active,
     collection: mapCollection(product.collection ?? null),
   };
@@ -102,12 +99,9 @@ export class ProductsResolver {
     @Arg("filter", () => ProductsFilterInput) filter: ProductsFilterInput,
   ): Promise<ProductsResponse> {
     return tryCatchAsync(async () => {
-      const userId = ctx.user?.dbUserId ?? null;
       const limit = filter.limit ?? 12;
       const page = filter.page ?? 1;
       const offset = (page - 1) * limit;
-      const isFeaturedSort =
-        filter.order_by === ProductOrderBy.FEATURED || !filter.order_by;
 
       const priceFilter =
         filter.min_price !== undefined || filter.max_price !== undefined
@@ -131,10 +125,8 @@ export class ProductsResolver {
         : {};
 
       // Build the where clause based on archive flag
-      // Archive = products that are inactive, sold out, or have an expired/not-yet-started collection
       let archiveConditions;
       if (filter.archive) {
-        // Archive: is_active=false OR available_quantity=0 OR (collection exists AND now outside window)
         archiveConditions = {
           OR: [
             { is_active: false },
@@ -153,8 +145,6 @@ export class ProductsResolver {
           ],
         };
       } else {
-        // Active: is_active=true AND (no collection OR collection window includes now)
-        // Collection is active when: (starts_at is null OR starts_at <= now) AND (ends_at is null OR ends_at >= now)
         archiveConditions = {
           is_active: true,
           OR: [
@@ -213,151 +203,26 @@ export class ProductsResolver {
         ...collectionFilter,
       };
 
-      let userWishlistIds: Set<number> | undefined;
-      let userPreferredCategories: string[] = [];
-
-      if (userId) {
-        // Fetch user preferences for featured sorting and wishlist IDs in parallel
-        const [wishlistItems, cartItems, orderItems] = await Promise.all([
-          ctx.prisma.wishlist.findMany({
-            where: { user_id: userId },
-            select: {
-              product_id: true,
-              product: {
-                include: { product_categories: { select: { category: true } } },
-              },
-            },
-          }),
-          ctx.prisma.cart.findMany({
-            where: { user_id: userId },
-            select: {
-              product: {
-                include: { product_categories: { select: { category: true } } },
-              },
-            },
-          }),
-          ctx.prisma.purchasedProductItem.findMany({
-            where: { order: { user_id: userId } },
-            select: {
-              product: {
-                include: { product_categories: { select: { category: true } } },
-              },
-            },
-          }),
-        ]);
-
-        userWishlistIds = new Set(wishlistItems.map((w) => w.product_id));
-
-        // Extract categories from wishlist, cart, and orders for featured sorting
-        if (isFeaturedSort) {
-          const wishlistCategories = wishlistItems.flatMap((w) =>
-            w.product.product_categories.map((c) => c.category),
-          );
-          const cartCategories = cartItems.flatMap((c) =>
-            c.product.product_categories.map((pc) => pc.category),
-          );
-          const orderCategories = orderItems.flatMap((o) =>
-            o.product.product_categories.map((pc) => pc.category),
-          );
-          userPreferredCategories = [
-            ...new Set([
-              ...wishlistCategories,
-              ...cartCategories,
-              ...orderCategories,
-            ]),
-          ];
-        }
-      }
-
-      const productInclude = {
-        reviews: { select: { rating: true } },
-        collection: {
-          include: { _count: { select: { products: true } } },
-        },
-      };
-      type ProductWithRelations = Prisma.ProductGetPayload<{
-        include: typeof productInclude;
-      }>;
-
-      const featuredOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
-        { purchased_products: { _count: "desc" } },
-        { id: "desc" },
-      ];
-      const standardOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
+      const orderBy: Prisma.ProductOrderByWithRelationInput[] = [
         getOrderBy(filter.order_by),
         { id: "desc" },
       ];
 
-      // Featured sorting with user preferences: build a stable ordered ID list
-      let products: ProductWithRelations[];
-      if (isFeaturedSort && userPreferredCategories.length > 0) {
-        const preferredWhere = {
-          ...where,
-          product_categories: {
-            some: { category: { in: userPreferredCategories } },
-          },
-        };
-
-        const preferredIdsResult = await ctx.prisma.product.findMany({
-          where: preferredWhere,
-          select: { id: true },
-          orderBy: featuredOrderBy,
-          take: offset + limit,
-        });
-        const preferredIds = preferredIdsResult.map((item) => item.id);
-
-        const otherIdsResult = await ctx.prisma.product.findMany({
-          where: {
-            ...where,
-            ...(preferredIds.length > 0 && { id: { notIn: preferredIds } }),
-          },
-          select: { id: true },
-          orderBy: featuredOrderBy,
-          take: offset + limit,
-        });
-        const otherIds = otherIdsResult.map((item) => item.id);
-
-        const orderedIds: number[] = [];
-        const seenIds = new Set<number>();
-        for (const id of preferredIds) {
-          if (seenIds.has(id)) continue;
-          seenIds.add(id);
-          orderedIds.push(id);
-        }
-        for (const id of otherIds) {
-          if (seenIds.has(id)) continue;
-          seenIds.add(id);
-          orderedIds.push(id);
-        }
-        const pageIds = orderedIds.slice(offset, offset + limit);
-
-        if (pageIds.length === 0) {
-          products = [];
-        } else {
-          const pageProducts = await ctx.prisma.product.findMany({
-            where: { id: { in: pageIds } },
-            include: productInclude,
-          });
-          const productMap = new Map(
-            pageProducts.map((product) => [product.id, product]),
-          );
-          products = pageIds.flatMap((id) => {
-            const product = productMap.get(id);
-            return product ? [product] : [];
-          });
-        }
-      } else {
-        // Standard ordering
-        products = await ctx.prisma.product.findMany({
+      const [products, totalProducts] = await Promise.all([
+        ctx.prisma.product.findMany({
           where,
-          include: productInclude,
-          orderBy: standardOrderBy,
+          include: {
+            reviews: { select: { rating: true } },
+            collection: {
+              include: { _count: { select: { products: true } } },
+            },
+          },
+          orderBy,
           skip: offset,
           take: limit,
-        });
-      }
-
-      const totalProducts = await ctx.prisma.product.count({ where });
+        }),
+        ctx.prisma.product.count({ where }),
+      ]);
 
       // Build where clause for price stats (respects other filters but not price filter)
       const priceStatsWhere = {
@@ -407,7 +272,7 @@ export class ProductsResolver {
       const totalPages = Math.ceil(totalProducts / limit);
 
       const mappedProducts = products.map((product) =>
-        mapToProductBase(product, userWishlistIds),
+        mapToProductBase(product),
       );
 
       // Calculate price range and histogram
