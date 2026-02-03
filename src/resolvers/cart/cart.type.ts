@@ -1,7 +1,8 @@
-import { GraphQLDateTime } from "graphql-scalars";
+import { GraphQLDateTime, GraphQLJSON } from "graphql-scalars";
 import { Field, InputType, Int, ObjectType } from "type-graphql";
 
 import { ProductBase } from "../products/products.type";
+import { ProductCustomizationData } from "../shared/customization.type";
 
 @ObjectType()
 export class CartItem {
@@ -25,6 +26,12 @@ export class CartItem {
 
   @Field(() => ProductBase)
   product!: ProductBase;
+
+  @Field(() => ProductCustomizationData, { nullable: true })
+  custom_data?: ProductCustomizationData | null;
+
+  @Field(() => String)
+  custom_data_hash!: string;
 }
 
 @ObjectType()
@@ -46,6 +53,9 @@ export class AddToCartInput {
 
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   quantity?: number;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  custom_data?: PrismaJson.ProductCustomizationData | null;
 }
 
 @InputType()
@@ -55,6 +65,9 @@ export class UpdateCartQuantityInput {
 
   @Field(() => Int)
   quantity!: number;
+
+  @Field(() => String, { nullable: true, defaultValue: "" })
+  custom_data_hash?: string;
 }
 
 @ObjectType()

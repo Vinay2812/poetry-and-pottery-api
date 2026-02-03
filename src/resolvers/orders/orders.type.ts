@@ -8,6 +8,7 @@ import {
 } from "type-graphql";
 
 import { ProductBase } from "../products/products.type";
+import { ProductCustomizationData } from "../shared/customization.type";
 
 // Register OrderStatus enum for GraphQL
 export enum OrderStatus {
@@ -81,6 +82,9 @@ export class OrderItem {
 
   @Field(() => Boolean)
   has_reviewed!: boolean;
+
+  @Field(() => ProductCustomizationData, { nullable: true })
+  custom_data?: ProductCustomizationData | null;
 }
 
 @ObjectType()

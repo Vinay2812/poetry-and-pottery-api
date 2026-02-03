@@ -32,6 +32,7 @@ type AboutValue {
 }
 
 input AddToCartInput {
+  custom_data: JSON
   product_id: Int!
   quantity: Int = 1
 }
@@ -720,6 +721,8 @@ type CareWarning {
 
 type CartItem {
   created_at: DateTime!
+  custom_data: ProductCustomizationData
+  custom_data_hash: String!
   id: Int!
   product: ProductBase!
   product_id: Int!
@@ -900,6 +903,14 @@ type CustomizationOption {
   sort_order: Int!
   type: String!
   updated_at: DateTime!
+  value: String!
+}
+
+type CustomizationOptionSnapshot {
+  name: String!
+  optionId: Int!
+  priceModifier: Float!
+  type: String!
   value: String!
 }
 
@@ -1229,7 +1240,7 @@ type Mutation {
   deleteAddress(id: Int!): AddressMutationResponse!
   moveToCart(productId: Int!): Boolean!
   registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
-  removeFromCart(productId: Int!): Boolean!
+  removeFromCart(customDataHash: String = "", productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
   subscribeToNewsletter: NewsletterMutationResponse!
   toggleReviewLike(reviewId: Int!): ToggleReviewLikeResponse!
@@ -1287,6 +1298,7 @@ type Order {
 
 type OrderItem {
   created_at: DateTime!
+  custom_data: ProductCustomizationData
   discount: Int!
   has_reviewed: Boolean!
   id: Int!
@@ -1388,6 +1400,11 @@ type ProductBase {
   reviews_count: Int!
   slug: String!
   total_quantity: Int!
+}
+
+type ProductCustomizationData {
+  options: [CustomizationOptionSnapshot!]!
+  totalModifier: Float!
 }
 
 type ProductDetail {
@@ -1826,6 +1843,7 @@ input UpdateAddressInput {
 }
 
 input UpdateCartQuantityInput {
+  custom_data_hash: String = ""
   product_id: Int!
   quantity: Int!
 }

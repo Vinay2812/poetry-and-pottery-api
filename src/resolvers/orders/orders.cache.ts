@@ -38,7 +38,16 @@ class OrderCache extends BaseCache {
             include: {
               user: { select: { id: true, email: true, name: true } },
               ordered_products: {
-                include: {
+                select: {
+                  id: true,
+                  order_id: true,
+                  product_id: true,
+                  quantity: true,
+                  discount: true,
+                  price: true,
+                  custom_data: true,
+                  created_at: true,
+                  updated_at: true,
                   product: {
                     include: { reviews: { select: { rating: true } } },
                   },
@@ -68,8 +77,19 @@ class OrderCache extends BaseCache {
           include: {
             user: { select: { id: true, email: true, name: true } },
             ordered_products: {
-              include: {
-                product: { include: { reviews: { select: { rating: true } } } },
+              select: {
+                id: true,
+                order_id: true,
+                product_id: true,
+                quantity: true,
+                discount: true,
+                price: true,
+                custom_data: true,
+                created_at: true,
+                updated_at: true,
+                product: {
+                  include: { reviews: { select: { rating: true } } },
+                },
               },
               orderBy: { product: { available_quantity: "desc" } },
             },

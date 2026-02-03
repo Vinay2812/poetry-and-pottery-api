@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { GraphQLError } from "graphql";
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 
@@ -15,6 +16,13 @@ import {
   CartResponse,
   UpdateCartQuantityInput,
 } from "./cart.type";
+
+function hashCustomData(
+  customData: PrismaJson.ProductCustomizationData | null | undefined,
+): string {
+  if (!customData) return "";
+  return createHash("md5").update(JSON.stringify(customData)).digest("hex");
+}
 
 function getUserId(ctx: Context): number {
   const userId = ctx.user?.dbUserId;
@@ -96,6 +104,8 @@ function mapCartItem(
     quantity: number;
     created_at: Date;
     updated_at: Date;
+    custom_data?: PrismaJson.ProductCustomizationData | null;
+    custom_data_hash?: string;
     product: {
       id: number;
       slug: string;
@@ -137,6 +147,8 @@ function mapCartItem(
     created_at: cart.created_at,
     updated_at: cart.updated_at,
     product: productBase,
+    custom_data: cart.custom_data ?? null,
+    custom_data_hash: cart.custom_data_hash ?? "",
   };
 }
 
@@ -176,13 +188,14 @@ export class CartResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
       const quantity = input.quantity ?? 1;
+      const customDataHash = hashCustomData(input.custom_data);
 
       const cart = await prisma.cart.upsert({
         where: {
           user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
-            custom_data_hash: "",
+            custom_data_hash: customDataHash,
           },
         },
         update: {
@@ -192,7 +205,8 @@ export class CartResolver {
           user_id: userId,
           product_id: input.product_id,
           quantity,
-          custom_data_hash: "",
+          custom_data_hash: customDataHash,
+          custom_data: input.custom_data ?? undefined,
         },
         include: {
           product: {
@@ -209,7 +223,7 @@ export class CartResolver {
           user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
-            custom_data_hash: "",
+            custom_data_hash: customDataHash,
           },
         },
       });
@@ -238,6 +252,7 @@ export class CartResolver {
   ): Promise<CartMutationResponse> {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
+      const customDataHash = input.custom_data_hash ?? "";
 
       if (input.quantity <= 0) {
         await prisma.cart.delete({
@@ -245,7 +260,7 @@ export class CartResolver {
             user_id_product_id_custom_data_hash: {
               user_id: userId,
               product_id: input.product_id,
-              custom_data_hash: "",
+              custom_data_hash: customDataHash,
             },
           },
         });
@@ -260,7 +275,7 @@ export class CartResolver {
           user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
-            custom_data_hash: "",
+            custom_data_hash: customDataHash,
           },
         },
         data: { quantity: input.quantity },
@@ -279,7 +294,7 @@ export class CartResolver {
           user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: input.product_id,
-            custom_data_hash: "",
+            custom_data_hash: customDataHash,
           },
         },
       });
@@ -305,6 +320,8 @@ export class CartResolver {
   async removeFromCart(
     @Ctx() ctx: Context,
     @Arg("productId", () => Int) productId: number,
+    @Arg("customDataHash", () => String, { nullable: true, defaultValue: "" })
+    customDataHash: string,
   ): Promise<boolean> {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
@@ -314,7 +331,7 @@ export class CartResolver {
           user_id_product_id_custom_data_hash: {
             user_id: userId,
             product_id: productId,
-            custom_data_hash: "",
+            custom_data_hash: customDataHash,
           },
         },
       });

@@ -16,7 +16,15 @@ class CartCache extends BaseCache {
       async () => {
         return prisma.cart.findMany({
           where: { user_id: userId },
-          include: {
+          select: {
+            id: true,
+            user_id: true,
+            product_id: true,
+            quantity: true,
+            custom_data: true,
+            custom_data_hash: true,
+            created_at: true,
+            updated_at: true,
             product: {
               include: {
                 reviews: { select: { rating: true } },

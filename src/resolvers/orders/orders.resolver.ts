@@ -76,6 +76,7 @@ function mapOrderItem(
     quantity: number;
     discount: number;
     price: number;
+    custom_data?: PrismaJson.ProductCustomizationData | null;
     created_at: Date;
     updated_at: Date;
     product: {
@@ -110,6 +111,7 @@ function mapOrderItem(
     updated_at: item.updated_at,
     product: productBase,
     has_reviewed: reviewedProductIds.has(item.product_id),
+    custom_data: item.custom_data ?? null,
   };
 }
 
@@ -145,6 +147,7 @@ function mapOrder(
       quantity: number;
       discount: number;
       price: number;
+      custom_data?: PrismaJson.ProductCustomizationData | null;
       created_at: Date;
       updated_at: Date;
       product: {
@@ -390,11 +393,13 @@ export class OrdersResolver {
         };
       }
 
-      // Calculate totals
-      const subtotal = cartItems.reduce(
-        (sum, item) => sum + item.product.price * item.quantity,
-        0,
-      );
+      // Calculate totals (including customization modifiers)
+      const subtotal = cartItems.reduce((sum, item) => {
+        const customData =
+          item.custom_data as PrismaJson.ProductCustomizationData | null;
+        const itemPrice = item.product.price + (customData?.totalModifier ?? 0);
+        return sum + itemPrice * item.quantity;
+      }, 0);
       const total = subtotal + input.shipping_fee;
 
       // Create order and clear cart in transaction
@@ -409,11 +414,17 @@ export class OrdersResolver {
             request_at: new Date(),
             shipping_address: input.shipping_address,
             ordered_products: {
-              create: cartItems.map((item) => ({
-                product_id: item.product_id,
-                quantity: item.quantity,
-                price: item.product.price,
-              })),
+              create: cartItems.map((item) => {
+                const customData =
+                  item.custom_data as PrismaJson.ProductCustomizationData | null;
+                return {
+                  product_id: item.product_id,
+                  quantity: item.quantity,
+                  price: item.product.price + (customData?.totalModifier ?? 0),
+                  custom_data: item.custom_data ?? undefined,
+                  custom_data_hash: item.custom_data_hash,
+                };
+              }),
             },
           },
           include: {
