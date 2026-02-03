@@ -45,6 +45,7 @@
     "graphql-type-json": "^0.3.2",
     "graphql-upload-minimal": "^1.6.4",
     "helmet": "^8.1.0",
+    "ioredis": "^5.9.2",
     "moment": "^2.30.1",
     "reflect-metadata": "^0.2.2",
     "type-graphql": "^2.0.0-rc.2",

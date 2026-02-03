@@ -2,6 +2,7 @@ import { Arg, Ctx, Float, Int, Mutation, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
 import { OrderStatus } from "@/prisma/generated/client";
+import { orderCache } from "@/resolvers/orders/orders.cache";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
@@ -204,6 +205,8 @@ export class AdminOrdersResolver {
         data: updateData,
       });
 
+      await orderCache.invalidateUserOrders(order.user_id);
+
       return { success: true, error: null };
     });
   }
@@ -222,7 +225,7 @@ export class AdminOrdersResolver {
 
       const order = await ctx.prisma.productOrder.findUnique({
         where: { id: orderId },
-        select: { id: true },
+        select: { id: true, user_id: true },
       });
 
       if (!order) {
@@ -233,6 +236,8 @@ export class AdminOrdersResolver {
         where: { id: orderId },
         data: { total: newTotal },
       });
+
+      await orderCache.invalidateUserOrders(order.user_id);
 
       return { success: true, error: null };
     });
@@ -254,6 +259,7 @@ export class AdminOrdersResolver {
         where: { id: orderId },
         select: {
           id: true,
+          user_id: true,
           shipping_fee: true,
           ordered_products: {
             select: {
@@ -348,6 +354,8 @@ export class AdminOrdersResolver {
         },
       });
 
+      await orderCache.invalidateUserOrders(order.user_id);
+
       return { success: true, error: null };
     });
   }
@@ -373,6 +381,7 @@ export class AdminOrdersResolver {
           order: {
             select: {
               id: true,
+              user_id: true,
               shipping_fee: true,
               ordered_products: {
                 select: {
@@ -422,6 +431,8 @@ export class AdminOrdersResolver {
         },
       });
 
+      await orderCache.invalidateUserOrders(item.order.user_id);
+
       return { success: true, error: null };
     });
   }
@@ -451,6 +462,7 @@ export class AdminOrdersResolver {
           order: {
             select: {
               id: true,
+              user_id: true,
               shipping_fee: true,
               ordered_products: {
                 select: {
@@ -500,6 +512,8 @@ export class AdminOrdersResolver {
           total: Math.max(0, newTotal),
         },
       });
+
+      await orderCache.invalidateUserOrders(item.order.user_id);
 
       return { success: true, error: null };
     });

@@ -11,6 +11,7 @@ import {
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { eventCache } from "./events.cache";
 import {
   CancelRegistrationResponse,
   EventBase,
@@ -33,6 +34,7 @@ import {
   RegistrationsFilterInput,
   RegistrationsResponse,
 } from "./events.type";
+import { registrationCache } from "./registrations.cache";
 
 function getUserId(ctx: Context): number {
   const userId = ctx.user?.dbUserId;
@@ -338,76 +340,76 @@ export class EventsResolver {
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
 
-      const where: {
-        status?: PrismaEventStatus;
-        level?: PrismaEventLevel;
-        event_type?: PrismaEventType;
-        title?: { contains: string; mode: "insensitive" };
-      } = {};
-
-      if (filter?.status) {
-        where.status = filter.status as PrismaEventStatus;
-      }
-
-      if (filter?.level) {
-        where.level = filter.level as PrismaEventLevel;
-      }
-
-      if (filter?.event_type) {
-        where.event_type = filter.event_type as PrismaEventType;
-      }
-
-      if (filter?.search) {
-        where.title = { contains: filter.search, mode: "insensitive" };
-      }
-
-      const [events, total, levelsResult, eventTypesResult] = await Promise.all(
-        [
-          ctx.prisma.event.findMany({
-            where,
-            include: {
-              _count: {
-                select: { event_registrations: true, reviews: true },
-              },
-              reviews: { select: { rating: true } },
-            },
-            orderBy: { starts_at: "asc" },
-            skip: (page - 1) * limit,
-            take: limit,
-          }),
-          ctx.prisma.event.count({ where }),
-          ctx.prisma.event.findMany({
-            distinct: ["level"],
-            select: { level: true },
-            where: { level: { not: null } },
-          }),
-          ctx.prisma.event.findMany({
-            distinct: ["event_type"],
-            select: { event_type: true },
-          }),
-        ],
-      );
-
-      // Calculate average rating for each event
-      const eventsWithRating = events.map((event) => {
-        const { reviews, ...rest } = event;
-        const avgRating =
-          reviews.length > 0
-            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-            : null;
-        return mapEventBase(rest as typeof event, avgRating);
-      });
-
-      return {
-        data: eventsWithRating,
-        total,
+      const cacheFilter = {
         page,
-        total_pages: Math.ceil(total / limit),
-        levels: levelsResult
-          .filter((l) => l.level !== null)
-          .map((l) => mapEventLevel(l.level) as EventLevel),
-        event_types: eventTypesResult.map((t) => mapEventType(t.event_type)),
+        limit,
+        search: filter?.search,
+        status: filter?.status,
+        level: filter?.level,
+        event_type: filter?.event_type,
       };
+
+      return eventCache.list(cacheFilter, async () => {
+        const where: {
+          status?: PrismaEventStatus;
+          level?: PrismaEventLevel;
+          event_type?: PrismaEventType;
+          title?: { contains: string; mode: "insensitive" };
+        } = {};
+
+        if (filter?.status) where.status = filter.status as PrismaEventStatus;
+        if (filter?.level) where.level = filter.level as PrismaEventLevel;
+        if (filter?.event_type)
+          where.event_type = filter.event_type as PrismaEventType;
+        if (filter?.search)
+          where.title = { contains: filter.search, mode: "insensitive" };
+
+        const [events, total, levelsResult, eventTypesResult] =
+          await Promise.all([
+            ctx.prisma.event.findMany({
+              where,
+              include: {
+                _count: {
+                  select: { event_registrations: true, reviews: true },
+                },
+                reviews: { select: { rating: true } },
+              },
+              orderBy: { starts_at: "asc" },
+              skip: (page - 1) * limit,
+              take: limit,
+            }),
+            ctx.prisma.event.count({ where }),
+            ctx.prisma.event.findMany({
+              distinct: ["level"],
+              select: { level: true },
+              where: { level: { not: null } },
+            }),
+            ctx.prisma.event.findMany({
+              distinct: ["event_type"],
+              select: { event_type: true },
+            }),
+          ]);
+
+        const eventsWithRating = events.map((event) => {
+          const { reviews, ...rest } = event;
+          const avgRating =
+            reviews.length > 0
+              ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+              : null;
+          return mapEventBase(rest as typeof event, avgRating);
+        });
+
+        return {
+          data: eventsWithRating,
+          total,
+          page,
+          total_pages: Math.ceil(total / limit),
+          levels: levelsResult
+            .filter((l) => l.level !== null)
+            .map((l) => mapEventLevel(l.level) as EventLevel),
+          event_types: eventTypesResult.map((t) => mapEventType(t.event_type)),
+        };
+      });
     });
   }
 
@@ -419,55 +421,33 @@ export class EventsResolver {
     return tryCatchAsync(async () => {
       const userId = getUserIdOptional(ctx);
 
-      const event = await ctx.prisma.event.findUnique({
-        where: { slug },
-        include: {
-          reviews: {
-            include: {
-              user: {
-                select: { id: true, email: true, name: true, image: true },
-              },
-              likes: true,
-            },
-            orderBy: { created_at: "desc" },
-            take: 10,
-          },
-          _count: {
-            select: { reviews: true, event_registrations: true },
-          },
-        },
-      });
+      const event = await eventCache.getEventBySlug(slug);
+      if (!event) return null;
 
-      if (!event) {
-        return null;
-      }
-
-      // Check if user is registered for this event
-      let isRegistered = false;
-      if (userId) {
-        const registration = await ctx.prisma.eventRegistration.findUnique({
-          where: {
-            event_id_user_id: {
-              event_id: event.id,
-              user_id: userId,
-            },
-          },
-        });
-        isRegistered = !!registration;
-      }
-
-      // Calculate average rating
+      // Calculate avg rating from reviews
       const avgRating =
         event.reviews.length > 0
           ? event.reviews.reduce((sum, r) => sum + r.rating, 0) /
             event.reviews.length
           : null;
 
-      return {
+      const baseEvent = {
         ...mapEventBase(event, avgRating),
         reviews: event.reviews.map(mapReview),
-        is_registered: isRegistered,
+        is_registered: false,
       };
+
+      // Check user registration (not cached, user-specific)
+      if (userId) {
+        const registration = await ctx.prisma.eventRegistration.findUnique({
+          where: {
+            event_id_user_id: { event_id: baseEvent.id, user_id: userId },
+          },
+        });
+        return { ...baseEvent, is_registered: !!registration };
+      }
+
+      return baseEvent;
     });
   }
 
@@ -479,55 +459,33 @@ export class EventsResolver {
     return tryCatchAsync(async () => {
       const userId = getUserIdOptional(ctx);
 
-      const event = await ctx.prisma.event.findUnique({
-        where: { id },
-        include: {
-          reviews: {
-            include: {
-              user: {
-                select: { id: true, email: true, name: true, image: true },
-              },
-              likes: true,
-            },
-            orderBy: { created_at: "desc" },
-            take: 10,
-          },
-          _count: {
-            select: { reviews: true, event_registrations: true },
-          },
-        },
-      });
+      const event = await eventCache.getEventById(id);
+      if (!event) return null;
 
-      if (!event) {
-        return null;
-      }
-
-      // Check if user is registered for this event
-      let isRegistered = false;
-      if (userId) {
-        const registration = await ctx.prisma.eventRegistration.findUnique({
-          where: {
-            event_id_user_id: {
-              event_id: event.id,
-              user_id: userId,
-            },
-          },
-        });
-        isRegistered = !!registration;
-      }
-
-      // Calculate average rating
+      // Calculate avg rating from reviews
       const avgRating =
         event.reviews.length > 0
           ? event.reviews.reduce((sum, r) => sum + r.rating, 0) /
             event.reviews.length
           : null;
 
-      return {
+      const baseEvent = {
         ...mapEventBase(event, avgRating),
         reviews: event.reviews.map(mapReview),
-        is_registered: isRegistered,
+        is_registered: false,
       };
+
+      // Check user registration (not cached, user-specific)
+      if (userId) {
+        const registration = await ctx.prisma.eventRegistration.findUnique({
+          where: {
+            event_id_user_id: { event_id: baseEvent.id, user_id: userId },
+          },
+        });
+        return { ...baseEvent, is_registered: !!registration };
+      }
+
+      return baseEvent;
     });
   }
 
@@ -801,38 +759,18 @@ export class EventsResolver {
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
 
-      const where: {
-        user_id: number;
-        event?: { title: { contains: string; mode: "insensitive" } };
-      } = { user_id: userId };
-
-      if (filter?.search) {
-        where.event = {
-          title: { contains: filter.search, mode: "insensitive" },
-        };
-      }
-
-      const [registrations, total] = await Promise.all([
-        ctx.prisma.eventRegistration.findMany({
-          where,
-          include: {
-            event: true,
-            user: {
-              select: { id: true, email: true, name: true, image: true },
-            },
-          },
-          orderBy: { created_at: "desc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.eventRegistration.count({ where }),
-      ]);
+      const result = await registrationCache.getUserRegistrationsList(
+        userId,
+        page,
+        limit,
+        filter?.search,
+      );
 
       return {
-        data: registrations.map((reg) => mapRegistration(reg, false)),
-        total,
+        data: result.registrations.map((reg) => mapRegistration(reg, false)),
+        total: result.total,
         page,
-        total_pages: Math.ceil(total / limit),
+        total_pages: Math.ceil(result.total / limit),
       };
     });
   }
@@ -846,24 +784,16 @@ export class EventsResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      const registration = await ctx.prisma.eventRegistration.findFirst({
-        where: {
-          id: registrationId,
-          user_id: userId,
-        },
-        include: {
-          event: true,
-          user: {
-            select: { id: true, email: true, name: true, image: true },
-          },
-        },
-      });
+      const registration = await registrationCache.getRegistrationById(
+        userId,
+        registrationId,
+      );
 
       if (!registration) {
         return null;
       }
 
-      // Check if user has reviewed this event
+      // Check if user has reviewed this event (not cached, user-specific)
       const review = await ctx.prisma.review.findFirst({
         where: {
           user_id: userId,
@@ -886,56 +816,19 @@ export class EventsResolver {
       const userId = getUserId(ctx);
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
-      const now = new Date();
 
-      const baseWhere = {
-        user_id: userId,
-        event: {
-          ends_at: { gt: now },
-        },
-      };
-
-      const where = filter?.search
-        ? {
-            ...baseWhere,
-            AND: [
-              {
-                OR: [
-                  {
-                    event: {
-                      title: {
-                        contains: filter.search,
-                        mode: "insensitive" as const,
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          }
-        : baseWhere;
-
-      const [registrations, total] = await Promise.all([
-        ctx.prisma.eventRegistration.findMany({
-          where,
-          include: {
-            event: true,
-            user: {
-              select: { id: true, email: true, name: true, image: true },
-            },
-          },
-          orderBy: { event: { starts_at: "asc" } },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.eventRegistration.count({ where }),
-      ]);
+      const result = await registrationCache.getUpcomingRegistrationsList(
+        userId,
+        page,
+        limit,
+        filter?.search,
+      );
 
       return {
-        data: registrations.map((reg) => mapRegistration(reg, false)),
-        total,
+        data: result.registrations.map((reg) => mapRegistration(reg, false)),
+        total: result.total,
         page,
-        total_pages: Math.ceil(total / limit),
+        total_pages: Math.ceil(result.total / limit),
       };
     });
   }
@@ -951,58 +844,21 @@ export class EventsResolver {
       const userId = getUserId(ctx);
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
-      const now = new Date();
 
-      const baseWhere = {
-        user_id: userId,
-        event: {
-          ends_at: { lte: now },
-        },
-      };
-
-      const where = filter?.search
-        ? {
-            ...baseWhere,
-            AND: [
-              {
-                OR: [
-                  {
-                    event: {
-                      title: {
-                        contains: filter.search,
-                        mode: "insensitive" as const,
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          }
-        : baseWhere;
-
-      const [registrations, total] = await Promise.all([
-        ctx.prisma.eventRegistration.findMany({
-          where,
-          include: {
-            event: true,
-            user: {
-              select: { id: true, email: true, name: true, image: true },
-            },
-          },
-          orderBy: { event: { ends_at: "desc" } },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.eventRegistration.count({ where }),
-      ]);
+      const result = await registrationCache.getCompletedRegistrationsList(
+        userId,
+        page,
+        limit,
+        filter?.search,
+      );
 
       // If no registrations, return early
-      if (registrations.length === 0) {
+      if (result.registrations.length === 0) {
         return { data: [], total: 0, page, total_pages: 0 };
       }
 
-      // Check if user has reviewed each event
-      const eventIds = registrations.map((r) => r.event_id);
+      // Check if user has reviewed each event (not cached, user-specific)
+      const eventIds = result.registrations.map((r) => r.event_id);
       const userReviews = await ctx.prisma.review.findMany({
         where: {
           user_id: userId,
@@ -1020,12 +876,12 @@ export class EventsResolver {
       }
 
       return {
-        data: registrations.map((reg) =>
+        data: result.registrations.map((reg) =>
           mapRegistration(reg, reviewedEventIds.has(reg.event_id)),
         ),
-        total,
+        total: result.total,
         page,
-        total_pages: Math.ceil(total / limit),
+        total_pages: Math.ceil(result.total / limit),
       };
     });
   }
@@ -1063,7 +919,7 @@ export class EventsResolver {
       // Get event details
       const event = await ctx.prisma.event.findUnique({
         where: { id: input.eventId },
-        select: { price: true, available_seats: true },
+        select: { price: true, available_seats: true, slug: true },
       });
 
       if (!event) {
@@ -1108,6 +964,14 @@ export class EventsResolver {
         }),
       ]);
 
+      // Invalidate caches
+      await Promise.all([
+        registrationCache.invalidateUserRegistrationsList(userId),
+        eventCache.invalidateEventById(input.eventId),
+        eventCache.invalidateEventBySlug(event.slug),
+        eventCache.invalidateEventLists(),
+      ]);
+
       return {
         success: true,
         registration: mapRegistration(registration, false),
@@ -1130,6 +994,11 @@ export class EventsResolver {
           id: registrationId,
           user_id: userId,
         },
+        include: {
+          event: {
+            select: { slug: true },
+          },
+        },
       });
 
       if (!registration) {
@@ -1149,6 +1018,14 @@ export class EventsResolver {
             available_seats: { increment: registration.seats_reserved },
           },
         }),
+      ]);
+
+      // Invalidate caches
+      await Promise.all([
+        registrationCache.invalidateUserRegistrationsList(userId),
+        eventCache.invalidateEventById(registration.event_id),
+        eventCache.invalidateEventBySlug(registration.event.slug),
+        eventCache.invalidateEventLists(),
       ]);
 
       return {

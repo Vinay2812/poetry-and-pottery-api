@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
+import { eventCache } from "@/resolvers/events/events.cache";
 import {
   EventLevel,
   EventRegistrationStatus,
@@ -382,36 +383,33 @@ export class AdminEventsResolver {
         }
       }
 
-      const event = await ctx.prisma.event.create({
-        data: {
-          title,
-          slug,
-          description,
-          event_type,
-          starts_at,
-          ends_at,
-          location,
-          full_location,
-          total_seats,
-          available_seats,
-          instructor,
-          includes,
-          price,
-          image,
-          highlights,
-          gallery,
-          status,
-          level,
-          performers,
-          lineup_notes,
-        },
+      return eventCache.withTransaction(ctx.prisma, async (tx) => {
+        const event = await tx.event.create({
+          data: {
+            title,
+            slug,
+            description,
+            event_type,
+            starts_at,
+            ends_at,
+            location,
+            full_location,
+            total_seats,
+            available_seats,
+            instructor,
+            includes,
+            price,
+            image,
+            highlights,
+            gallery,
+            status,
+            level,
+            performers,
+            lineup_notes,
+          },
+        });
+        return { success: true, eventId: event.id, error: null };
       });
-
-      return {
-        success: true,
-        eventId: event.id,
-        error: null,
-      };
     });
   }
 
@@ -439,7 +437,6 @@ export class AdminEventsResolver {
         }
       }
 
-      // Validate dates if both are provided
       if (input.starts_at && input.ends_at) {
         if (new Date(input.starts_at) >= new Date(input.ends_at)) {
           return {
@@ -450,16 +447,10 @@ export class AdminEventsResolver {
         }
       }
 
-      await ctx.prisma.event.update({
-        where: { id },
-        data: input,
+      return eventCache.withTransaction(ctx.prisma, async (tx) => {
+        await tx.event.update({ where: { id }, data: input });
+        return { success: true, eventId: id, error: null };
       });
-
-      return {
-        success: true,
-        eventId: id,
-        error: null,
-      };
     });
   }
 
@@ -470,36 +461,26 @@ export class AdminEventsResolver {
     @Arg("id", () => String) id: string,
   ): Promise<AdminEventMutationResponse> {
     return tryCatchAsync(async () => {
-      // Check if event has registrations
       const registrationCount = await ctx.prisma.eventRegistration.count({
         where: { event_id: id },
       });
 
-      if (registrationCount > 0) {
-        // Has registrations - cancel instead of delete
-        await ctx.prisma.event.update({
-          where: { id },
-          data: { status: EventStatus.CANCELLED },
-        });
-
-        return {
-          success: true,
-          eventId: id,
-          error:
-            "Event has registrations and was cancelled instead of deleted. This keeps registration history intact.",
-        };
-      }
-
-      // No registrations - safe to delete
-      await ctx.prisma.event.delete({
-        where: { id },
+      return eventCache.withTransaction(ctx.prisma, async (tx) => {
+        if (registrationCount > 0) {
+          await tx.event.update({
+            where: { id },
+            data: { status: EventStatus.CANCELLED },
+          });
+          return {
+            success: true,
+            eventId: id,
+            error:
+              "Event has registrations and was cancelled instead of deleted. This keeps registration history intact.",
+          };
+        }
+        await tx.event.delete({ where: { id } });
+        return { success: true, eventId: null, error: null };
       });
-
-      return {
-        success: true,
-        eventId: null,
-        error: null,
-      };
     });
   }
 
@@ -513,16 +494,10 @@ export class AdminEventsResolver {
     return tryCatchAsync(async () => {
       const status = statusStr as EventStatus;
 
-      await ctx.prisma.event.update({
-        where: { id },
-        data: { status },
+      return eventCache.withTransaction(ctx.prisma, async (tx) => {
+        await tx.event.update({ where: { id }, data: { status } });
+        return { success: true, eventId: id, error: null };
       });
-
-      return {
-        success: true,
-        eventId: id,
-        error: null,
-      };
     });
   }
 

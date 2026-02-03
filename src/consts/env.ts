@@ -28,3 +28,10 @@ export const R2_ACCESS_KEY_ID = process.env["R2_ACCESS_KEY_ID"];
 export const R2_SECRET_ACCESS_KEY = process.env["R2_SECRET_ACCESS_KEY"];
 export const R2_BUCKET = process.env["R2_BUCKET"];
 export const R2_PUBLIC_URL = process.env["R2_PUBLIC_URL"];
+
+// Redis
+export const REDIS_URL = process.env["REDIS_URL"];
+export const REDIS_HOST = process.env["REDIS_HOST"];
+export const REDIS_PORT = process.env["REDIS_PORT"]
+  ? parseInt(process.env["REDIS_PORT"], 10)
+  : undefined;

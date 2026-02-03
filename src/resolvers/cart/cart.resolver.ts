@@ -6,6 +6,8 @@ import { authRequired } from "@/middlewares/auth.middleware";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { wishlistCache } from "../wishlist/wishlist.cache";
+import { cartCache } from "./cart.cache";
 import {
   AddToCartInput,
   CartItem,
@@ -146,28 +148,15 @@ export class CartResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      const [cartItems, wishlistItems] = await Promise.all([
-        prisma.cart.findMany({
-          where: { user_id: userId },
-          include: {
-            product: {
-              include: {
-                reviews: { select: { rating: true } },
-                collection: true,
-              },
-            },
-          },
-          orderBy: { created_at: "desc" },
-        }),
-        prisma.wishlist.findMany({
-          where: { user_id: userId },
-          select: { product_id: true },
-        }),
+      // Each query cached individually
+      const [cartItems, wishlistIds] = await Promise.all([
+        cartCache.getCartItems(userId),
+        wishlistCache.getWishlistIds(userId),
       ]);
 
-      const userWishlistIds = new Set(wishlistItems.map((w) => w.product_id));
+      // Process results (no caching here, just transformation)
+      const userWishlistIds = new Set(wishlistIds);
       const items = cartItems.map((item) => mapCartItem(item, userWishlistIds));
-
       const total = items.length;
       const subtotal = items.reduce(
         (sum, item) => sum + item.product.price * item.quantity,
@@ -229,6 +218,8 @@ export class CartResolver {
         ? new Set([input.product_id])
         : new Set<number>();
 
+      await cartCache.invalidateCartItems(userId);
+
       return {
         success: true,
         item: mapCartItem(
@@ -258,6 +249,8 @@ export class CartResolver {
             },
           },
         });
+
+        await cartCache.invalidateCartItems(userId);
 
         return { success: true, item: null };
       }
@@ -295,6 +288,8 @@ export class CartResolver {
         ? new Set([input.product_id])
         : new Set<number>();
 
+      await cartCache.invalidateCartItems(userId);
+
       return {
         success: true,
         item: mapCartItem(
@@ -324,6 +319,8 @@ export class CartResolver {
         },
       });
 
+      await cartCache.invalidateCartItems(userId);
+
       return true;
     });
   }
@@ -337,6 +334,8 @@ export class CartResolver {
       await prisma.cart.deleteMany({
         where: { user_id: userId },
       });
+
+      await cartCache.invalidateCartItems(userId);
 
       return true;
     });

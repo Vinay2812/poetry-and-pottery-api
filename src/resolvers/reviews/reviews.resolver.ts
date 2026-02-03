@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { authRequired } from "@/middlewares/auth.middleware";
 import { Context } from "@/types/context";
 
+import { eventCache } from "../events/events.cache";
+import { productCache } from "../products/products.cache";
+import { reviewCache } from "./reviews.cache";
 import {
   CreateEventReviewInput,
   CreateProductReviewInput,
@@ -74,27 +77,7 @@ export class ReviewsResolver {
     @Arg("limit", () => Int, { nullable: true, defaultValue: 10 })
     limit: number,
   ): Promise<Review[]> {
-    const reviews = await prisma.review.findMany({
-      where: {
-        rating: { gte: 4 },
-        review: { not: null },
-        product_id: { not: null },
-      },
-      distinct: ["user_id"],
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        likes: true,
-      },
-      orderBy: [{ rating: "desc" }, { created_at: "desc" }],
-      take: limit,
-    });
-
+    const reviews = await reviewCache.getFeaturedReviewsList(limit);
     return reviews.map((review) => mapReview(review));
   }
 
@@ -109,31 +92,24 @@ export class ReviewsResolver {
     const limit = filter?.limit ?? 10;
     const currentUserId = ctx?.user?.dbUserId;
 
-    const [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where: { product_id: productId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          },
-          likes: true,
-        },
-        orderBy: { created_at: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.review.count({ where: { product_id: productId } }),
-    ]);
-
-    return {
-      data: reviews.map((review) => mapReview(review, currentUserId)),
-      total,
+    // Use query-level cache method
+    const cachedResult = await reviewCache.getProductReviewsList(
+      productId,
       page,
-      total_pages: Math.ceil(total / limit),
+      limit,
+    );
+
+    // Map with user-specific data outside cache
+    return {
+      data: cachedResult.reviews.map((review) => ({
+        ...mapReview(review),
+        is_liked_by_current_user: currentUserId
+          ? review.likes.some((like) => like.user_id === currentUserId)
+          : false,
+      })),
+      total: cachedResult.total,
+      page,
+      total_pages: Math.ceil(cachedResult.total / limit),
     };
   }
 
@@ -148,31 +124,24 @@ export class ReviewsResolver {
     const limit = filter?.limit ?? 10;
     const currentUserId = ctx?.user?.dbUserId;
 
-    const [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where: { event_id: eventId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          },
-          likes: true,
-        },
-        orderBy: { created_at: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.review.count({ where: { event_id: eventId } }),
-    ]);
-
-    return {
-      data: reviews.map((review) => mapReview(review, currentUserId)),
-      total,
+    // Use query-level cache method
+    const cachedResult = await reviewCache.getEventReviewsList(
+      eventId,
       page,
-      total_pages: Math.ceil(total / limit),
+      limit,
+    );
+
+    // Map with user-specific data outside cache
+    return {
+      data: cachedResult.reviews.map((review) => ({
+        ...mapReview(review),
+        is_liked_by_current_user: currentUserId
+          ? review.likes.some((like) => like.user_id === currentUserId)
+          : false,
+      })),
+      total: cachedResult.total,
+      page,
+      total_pages: Math.ceil(cachedResult.total / limit),
     };
   }
 
@@ -232,6 +201,10 @@ export class ReviewsResolver {
         likes: true,
       },
     });
+
+    await reviewCache.invalidateProductReviews(input.productId);
+    // Invalidate product detail cache since avg_rating changed
+    await productCache.invalidateByProduct(input.productId);
 
     return {
       success: true,
@@ -313,6 +286,10 @@ export class ReviewsResolver {
       },
     });
 
+    await reviewCache.invalidateEventReviews(input.eventId);
+    // Invalidate event detail cache since avg_rating changed
+    await eventCache.invalidateByEvent(input.eventId);
+
     return {
       success: true,
       review: mapReview(review, userId),
@@ -350,6 +327,17 @@ export class ReviewsResolver {
     await prisma.review.delete({
       where: { id: reviewId },
     });
+
+    if (review.product_id) {
+      await reviewCache.invalidateProductReviews(review.product_id);
+      // Invalidate product detail cache since avg_rating changed
+      await productCache.invalidateByProduct(review.product_id);
+    }
+    if (review.event_id) {
+      await reviewCache.invalidateEventReviews(review.event_id);
+      // Invalidate event detail cache since avg_rating changed
+      await eventCache.invalidateByEvent(review.event_id);
+    }
 
     return {
       success: true,
@@ -409,6 +397,13 @@ export class ReviewsResolver {
     const likesCount = await prisma.reviewLike.count({
       where: { review_id: reviewId },
     });
+
+    if (review.product_id) {
+      await reviewCache.invalidateProductReviews(review.product_id);
+    }
+    if (review.event_id) {
+      await reviewCache.invalidateEventReviews(review.event_id);
+    }
 
     return {
       success: true,

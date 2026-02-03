@@ -6,6 +6,7 @@ import { authRequired } from "@/middlewares/auth.middleware";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { newsletterCache } from "./newsletter.cache";
 import {
   NewsletterMutationResponse,
   NewsletterStatus,
@@ -27,14 +28,7 @@ export class NewsletterResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          subscribed_to_newsletter: true,
-          newsletter_subscribed_at: true,
-        },
-      });
-
+      const user = await newsletterCache.getUserStatus(userId);
       if (!user) {
         throw new GraphQLError("User not found");
       }
@@ -66,6 +60,8 @@ export class NewsletterResolver {
         },
       });
 
+      await newsletterCache.invalidateUserStatus(userId);
+
       return {
         success: true,
         status: {
@@ -95,6 +91,8 @@ export class NewsletterResolver {
           newsletter_subscribed_at: true,
         },
       });
+
+      await newsletterCache.invalidateUserStatus(userId);
 
       return {
         success: true,

@@ -2,6 +2,7 @@ import { Arg, Ctx, Float, Mutation, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
 import { EventRegistrationStatus } from "@/prisma/generated/client";
+import { registrationCache } from "@/resolvers/events/registrations.cache";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
@@ -241,6 +242,8 @@ export class AdminRegistrationsResolver {
         data: updateData,
       });
 
+      await registrationCache.invalidateUserRegistrations(registration.user_id);
+
       return { success: true, error: null };
     });
   }
@@ -259,7 +262,7 @@ export class AdminRegistrationsResolver {
 
       const registration = await ctx.prisma.eventRegistration.findUnique({
         where: { id: registrationId },
-        select: { id: true },
+        select: { id: true, user_id: true },
       });
 
       if (!registration) {
@@ -270,6 +273,8 @@ export class AdminRegistrationsResolver {
         where: { id: registrationId },
         data: { price: newPrice },
       });
+
+      await registrationCache.invalidateUserRegistrations(registration.user_id);
 
       return { success: true, error: null };
     });
@@ -300,6 +305,7 @@ export class AdminRegistrationsResolver {
         where: { id: registrationId },
         select: {
           id: true,
+          user_id: true,
           event_id: true,
           seats_reserved: true,
           status: true,
@@ -346,6 +352,8 @@ export class AdminRegistrationsResolver {
           seats_reserved: input.seatsReserved,
         },
       });
+
+      await registrationCache.invalidateUserRegistrations(registration.user_id);
 
       return { success: true, error: null };
     });

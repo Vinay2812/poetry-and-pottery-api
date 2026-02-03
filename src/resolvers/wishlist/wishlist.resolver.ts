@@ -7,7 +7,9 @@ import type { Collection } from "@/prisma/generated";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { cartCache } from "../cart/cart.cache";
 import { CollectionBase } from "../products/products.type";
+import { wishlistCache } from "./wishlist.cache";
 import {
   ToggleAction,
   ToggleWishlistResponse,
@@ -123,31 +125,9 @@ export class WishlistResolver {
       const userId = getUserId(ctx);
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 12;
-      const offset = (page - 1) * limit;
 
-      const [wishlistItems, total] = await Promise.all([
-        prisma.wishlist.findMany({
-          where: { user_id: userId },
-          include: {
-            product: {
-              include: {
-                reviews: { select: { rating: true } },
-                collection: {
-                  include: { _count: { select: { products: true } } },
-                },
-              },
-            },
-          },
-          orderBy: [
-            { product: { available_quantity: "desc" } },
-            { created_at: "desc" },
-          ],
-          skip: offset,
-          take: limit,
-        }),
-        prisma.wishlist.count({ where: { user_id: userId } }),
-      ]);
-
+      const { items: wishlistItems, total } =
+        await wishlistCache.getWishlistItems(userId, page, limit);
       const data = wishlistItems.map(mapWishlistItem);
       const totalPages = Math.ceil(total / limit);
 
@@ -161,12 +141,7 @@ export class WishlistResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      const wishlistItems = await prisma.wishlist.findMany({
-        where: { user_id: userId },
-        select: { product_id: true },
-      });
-
-      return wishlistItems.map((item) => item.product_id);
+      return wishlistCache.getWishlistIds(userId);
     });
   }
 
@@ -227,6 +202,8 @@ export class WishlistResolver {
         },
       });
 
+      await wishlistCache.invalidateUserWishlist(userId);
+
       return {
         success: true,
         item: mapWishlistItem(wishlist),
@@ -252,6 +229,8 @@ export class WishlistResolver {
           },
         },
       });
+
+      await wishlistCache.invalidateUserWishlist(userId);
 
       return true;
     });
@@ -281,6 +260,8 @@ export class WishlistResolver {
           where: { id: existing.id },
         });
 
+        await wishlistCache.invalidateUserWishlist(userId);
+
         return {
           success: true,
           action: ToggleAction.REMOVED,
@@ -304,6 +285,8 @@ export class WishlistResolver {
           },
         },
       });
+
+      await wishlistCache.invalidateUserWishlist(userId);
 
       return {
         success: true,
@@ -352,6 +335,9 @@ export class WishlistResolver {
           },
         });
       });
+
+      await wishlistCache.invalidateUserWishlist(userId);
+      await cartCache.invalidateUserCart(userId);
 
       return true;
     });

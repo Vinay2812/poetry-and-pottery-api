@@ -1,6 +1,7 @@
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
+import { productCache } from "@/resolvers/products/products.cache";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
@@ -275,7 +276,6 @@ export class AdminProductsResolver {
         collection_id,
       } = input;
 
-      // Validate slug uniqueness
       const existingProduct = await ctx.prisma.product.findUnique({
         where: { slug },
         select: { id: true },
@@ -289,32 +289,29 @@ export class AdminProductsResolver {
         };
       }
 
-      const product = await ctx.prisma.product.create({
-        data: {
-          name,
-          slug,
-          description,
-          instructions,
-          price,
-          total_quantity,
-          available_quantity,
-          is_active,
-          color_name,
-          color_code,
-          material,
-          image_urls,
-          collection_id: collection_id ?? null,
-          product_categories: {
-            create: categories.map((category) => ({ category })),
+      return productCache.withTransaction(ctx.prisma, async (tx) => {
+        const product = await tx.product.create({
+          data: {
+            name,
+            slug,
+            description,
+            instructions,
+            price,
+            total_quantity,
+            available_quantity,
+            is_active,
+            color_name,
+            color_code,
+            material,
+            image_urls,
+            collection_id: collection_id ?? null,
+            product_categories: {
+              create: categories.map((category) => ({ category })),
+            },
           },
-        },
+        });
+        return { success: true, productId: product.id, error: null };
       });
-
-      return {
-        success: true,
-        productId: product.id,
-        error: null,
-      };
     });
   }
 
@@ -328,13 +325,11 @@ export class AdminProductsResolver {
     return tryCatchAsync(async () => {
       const { categories, collection_id, ...data } = input;
 
-      // If slug is being updated, validate uniqueness
       if (data.slug) {
         const existingProduct = await ctx.prisma.product.findFirst({
           where: { slug: data.slug, NOT: { id } },
           select: { id: true },
         });
-
         if (existingProduct) {
           return {
             success: false,
@@ -343,31 +338,17 @@ export class AdminProductsResolver {
         }
       }
 
-      await ctx.prisma.$transaction(async (tx) => {
-        // Build update data
+      return productCache.withTransaction(ctx.prisma, async (tx) => {
         const updateData: typeof data & { collection_id?: number | null } = {
           ...data,
         };
-
-        // Handle collection_id update (explicitly set to null if passed as null)
-        if (collection_id !== undefined) {
+        if (collection_id !== undefined)
           updateData.collection_id = collection_id;
-        }
 
-        // Update product
-        await tx.product.update({
-          where: { id },
-          data: updateData,
-        });
+        await tx.product.update({ where: { id }, data: updateData });
 
-        // Update categories if provided
         if (categories !== undefined) {
-          // Delete existing categories
-          await tx.productCategory.deleteMany({
-            where: { product_id: id },
-          });
-
-          // Create new categories
+          await tx.productCategory.deleteMany({ where: { product_id: id } });
           if (categories.length > 0) {
             await tx.productCategory.createMany({
               data: categories.map((category) => ({
@@ -377,12 +358,8 @@ export class AdminProductsResolver {
             });
           }
         }
+        return { success: true, error: null };
       });
-
-      return {
-        success: true,
-        error: null,
-      };
     });
   }
 
@@ -393,34 +370,25 @@ export class AdminProductsResolver {
     @Arg("id", () => Int) id: number,
   ): Promise<AdminMutationResponse> {
     return tryCatchAsync(async () => {
-      // Check if product has any purchased products
       const purchasedCount = await ctx.prisma.purchasedProductItem.count({
         where: { product_id: id },
       });
 
-      if (purchasedCount > 0) {
-        // Has orders - deactivate instead of delete
-        await ctx.prisma.product.update({
-          where: { id },
-          data: { is_active: false },
-        });
-
-        return {
-          success: true,
-          error:
-            "Product has orders and was deactivated instead of deleted. This keeps order history intact.",
-        };
-      }
-
-      // No orders - safe to delete
-      await ctx.prisma.product.delete({
-        where: { id },
+      return productCache.withTransaction(ctx.prisma, async (tx) => {
+        if (purchasedCount > 0) {
+          await tx.product.update({
+            where: { id },
+            data: { is_active: false },
+          });
+          return {
+            success: true,
+            error:
+              "Product has orders and was deactivated instead of deleted. This keeps order history intact.",
+          };
+        }
+        await tx.product.delete({ where: { id } });
+        return { success: true, error: null };
       });
-
-      return {
-        success: true,
-        error: null,
-      };
     });
   }
 
@@ -436,19 +404,15 @@ export class AdminProductsResolver {
         select: { is_active: true },
       });
 
-      if (!product) {
-        return { success: false, error: "Product not found" };
-      }
+      if (!product) return { success: false, error: "Product not found" };
 
-      await ctx.prisma.product.update({
-        where: { id },
-        data: { is_active: !product.is_active },
+      return productCache.withTransaction(ctx.prisma, async (tx) => {
+        await tx.product.update({
+          where: { id },
+          data: { is_active: !product.is_active },
+        });
+        return { success: true, error: null };
       });
-
-      return {
-        success: true,
-        error: null,
-      };
     });
   }
 

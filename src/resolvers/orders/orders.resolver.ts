@@ -6,6 +6,9 @@ import { OrderStatus as PrismaOrderStatus } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
+import { cartCache } from "../cart/cart.cache";
+import { wishlistCache } from "../wishlist/wishlist.cache";
+import { orderCache } from "./orders.cache";
 import {
   CreateOrderInput,
   Order,
@@ -204,79 +207,31 @@ export class OrdersResolver {
   ): Promise<OrdersResponse> {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
+
       const page = filter?.page ?? 1;
       const limit = filter?.limit ?? 10;
       const search = filter?.search;
 
-      const where: {
-        user_id: number;
-        ordered_products?: {
-          some: {
-            product: { name: { contains: string; mode: "insensitive" } };
-          };
-        };
-      } = { user_id: userId };
-
-      if (search) {
-        where.ordered_products = {
-          some: {
-            product: {
-              name: { contains: search, mode: "insensitive" },
-            },
-          },
-        };
-      }
-
-      const [orders, total, wishlistItems] = await Promise.all([
-        ctx.prisma.productOrder.findMany({
-          where,
-          include: {
-            user: {
-              select: { id: true, email: true, name: true },
-            },
-            ordered_products: {
-              include: {
-                product: {
-                  include: { reviews: { select: { rating: true } } },
-                },
-              },
-            },
-          },
-          orderBy: { created_at: "desc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        ctx.prisma.productOrder.count({ where }),
-        ctx.prisma.wishlist.findMany({
-          where: { user_id: userId },
-          select: { product_id: true },
-        }),
+      // Get cached queries in parallel
+      const [{ orders, total }, wishlistIds] = await Promise.all([
+        orderCache.getOrdersList(userId, page, limit, search),
+        wishlistCache.getWishlistIds(userId),
       ]);
 
-      // Get all product IDs from all orders
+      // Get product IDs and check reviews (these are user-specific, not cached)
       const productIds = orders.flatMap((order) =>
         order.ordered_products.map((item) => item.product_id),
       );
-
-      // Check which products the user has reviewed
       const userReviews = await ctx.prisma.review.findMany({
-        where: {
-          user_id: userId,
-          product_id: { in: productIds },
-        },
+        where: { user_id: userId, product_id: { in: productIds } },
         select: { product_id: true },
       });
 
       const reviewedProductIds = new Set<number>();
       for (const review of userReviews) {
-        if (review.product_id) {
-          reviewedProductIds.add(review.product_id);
-        }
+        if (review.product_id) reviewedProductIds.add(review.product_id);
       }
-
-      const wishlistProductIds = new Set(
-        wishlistItems.map((w) => w.product_id),
-      );
+      const wishlistProductIds = new Set(wishlistIds);
 
       return {
         data: orders.map((order) =>
@@ -298,60 +253,25 @@ export class OrdersResolver {
     return tryCatchAsync(async () => {
       const userId = getUserId(ctx);
 
-      const [order, wishlistItems] = await Promise.all([
-        ctx.prisma.productOrder.findFirst({
-          where: {
-            id,
-            user_id: userId,
-          },
-          include: {
-            user: {
-              select: { id: true, email: true, name: true },
-            },
-            ordered_products: {
-              include: {
-                product: {
-                  include: { reviews: { select: { rating: true } } },
-                },
-              },
-              orderBy: {
-                product: { available_quantity: "desc" },
-              },
-            },
-          },
-        }),
-        ctx.prisma.wishlist.findMany({
-          where: { user_id: userId },
-          select: { product_id: true },
-        }),
+      const [order, wishlistIds] = await Promise.all([
+        orderCache.getOrderById(userId, id),
+        wishlistCache.getWishlistIds(userId),
       ]);
 
-      if (!order) {
-        return null;
-      }
+      if (!order) return null;
 
-      // Get product IDs from order
+      // Check which products user has reviewed
       const productIds = order.ordered_products.map((item) => item.product_id);
-
-      // Check which products the user has reviewed
       const userReviews = await ctx.prisma.review.findMany({
-        where: {
-          user_id: userId,
-          product_id: { in: productIds },
-        },
+        where: { user_id: userId, product_id: { in: productIds } },
         select: { product_id: true },
       });
 
       const reviewedProductIds = new Set<number>();
       for (const review of userReviews) {
-        if (review.product_id) {
-          reviewedProductIds.add(review.product_id);
-        }
+        if (review.product_id) reviewedProductIds.add(review.product_id);
       }
-
-      const wishlistProductIds = new Set(
-        wishlistItems.map((w) => w.product_id),
-      );
+      const wishlistProductIds = new Set(wishlistIds);
 
       return mapOrder(order, reviewedProductIds, wishlistProductIds);
     });
@@ -528,6 +448,9 @@ export class OrdersResolver {
       );
       const reviewedProductIds = new Set<number>(); // New orders won't have reviews
 
+      await orderCache.invalidateOrdersList(userId);
+      await cartCache.invalidateUserCart(userId);
+
       return {
         success: true,
         order: mapOrder(order, reviewedProductIds, wishlistProductIds),
@@ -619,6 +542,9 @@ export class OrdersResolver {
       const wishlistProductIds = new Set(
         wishlistItems.map((w) => w.product_id),
       );
+
+      await orderCache.invalidateOrdersList(userId);
+      await orderCache.invalidateOrderById(userId, orderId);
 
       return {
         success: true,

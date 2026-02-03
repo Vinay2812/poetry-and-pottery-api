@@ -1,6 +1,7 @@
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
+import { customizationCache } from "@/resolvers/customization/customization.cache";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
 
@@ -17,9 +18,7 @@ import {
 
 @Resolver()
 export class AdminCustomizationResolver {
-  /**
-   * List all customization options with pagination, search, and filters
-   */
+  // List all customization options with pagination, search, and filters
   @Query(() => AdminCustomizationOptionsResponse)
   @adminRequired()
   async adminCustomizationOptions(
@@ -90,9 +89,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Get a single customization option by ID
-   */
+  // Get a single customization option by ID
   @Query(() => AdminCustomizationOption, { nullable: true })
   @adminRequired()
   async adminCustomizationOptionById(
@@ -108,9 +105,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Get all unique categories for filter dropdown
-   */
+  // Get all unique categories for filter dropdown
   @Query(() => [AdminCustomizationCategorySummary])
   @adminRequired()
   async adminCustomizationCategories(
@@ -130,9 +125,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Get all unique types for filter dropdown
-   */
+  // Get all unique types for filter dropdown
   @Query(() => [AdminCustomizationTypeSummary])
   @adminRequired()
   async adminCustomizationTypes(
@@ -152,9 +145,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Create a new customization option
-   */
+  // Create a new customization option
   @Mutation(() => AdminCustomizationMutationResponse)
   @adminRequired()
   async adminCreateCustomizationOption(
@@ -202,6 +193,8 @@ export class AdminCustomizationResolver {
         },
       });
 
+      await customizationCache.invalidateAll();
+
       return {
         success: true,
         optionId: option.id,
@@ -210,9 +203,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Update an existing customization option
-   */
+  // Update an existing customization option
   @Mutation(() => AdminCustomizationMutationResponse)
   @adminRequired()
   async adminUpdateCustomizationOption(
@@ -273,6 +264,8 @@ export class AdminCustomizationResolver {
         data: input,
       });
 
+      await customizationCache.invalidateAll();
+
       return {
         success: true,
         optionId: id,
@@ -281,9 +274,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Delete a customization option
-   */
+  // Delete a customization option
   @Mutation(() => AdminCustomizationMutationResponse)
   @adminRequired()
   async adminDeleteCustomizationOption(
@@ -309,6 +300,8 @@ export class AdminCustomizationResolver {
         where: { id },
       });
 
+      await customizationCache.invalidateAll();
+
       return {
         success: true,
         optionId: id,
@@ -317,9 +310,7 @@ export class AdminCustomizationResolver {
     });
   }
 
-  /**
-   * Toggle active status of a customization option
-   */
+  // Toggle active status of a customization option
   @Mutation(() => AdminCustomizationMutationResponse)
   @adminRequired()
   async adminToggleCustomizationOptionActive(
@@ -344,6 +335,8 @@ export class AdminCustomizationResolver {
         where: { id },
         data: { is_active: !option.is_active },
       });
+
+      await customizationCache.invalidateAll();
 
       return {
         success: true,
