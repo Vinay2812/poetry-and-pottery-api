@@ -10,8 +10,11 @@ export class CustomizationOption {
   @Field(() => Int)
   id!: number;
 
+  @Field(() => Int)
+  customize_category_id!: number;
+
   @Field(() => String)
-  category!: string;
+  category_name!: string;
 
   @Field(() => String)
   type!: string;
@@ -44,6 +47,9 @@ export class CustomizationOption {
 
 @ObjectType()
 export class CustomizationCategory {
+  @Field(() => Int)
+  id!: number;
+
   @Field(() => String)
   category!: string;
 
@@ -88,8 +94,8 @@ export class CustomizationCategoriesFilterInput {
 
 @InputType()
 export class CustomizationOptionsFilterInput {
-  @Field(() => String)
-  category!: string;
+  @Field(() => Int)
+  customize_category_id!: number;
 
   @Field(() => String, { nullable: true })
   type?: string;
@@ -119,8 +125,11 @@ export class CustomizationCategoriesResponse {
 
 @ObjectType()
 export class CustomizationOptionsResponse {
+  @Field(() => Int)
+  customize_category_id!: number;
+
   @Field(() => String)
-  category!: string;
+  category_name!: string;
 
   @Field(() => [CustomizationOptionsByType])
   options_by_type!: CustomizationOptionsByType[];

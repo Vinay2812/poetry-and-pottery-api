@@ -11,6 +11,7 @@ import {
   CreateEventReviewInput,
   CreateProductReviewInput,
   CreateReviewResponse,
+  FeaturedReview,
   Review,
   ReviewsFilterInput,
   ReviewsResponse,
@@ -71,6 +72,45 @@ function mapReview(
 
 @Resolver()
 export class ReviewsResolver {
+  @Query(() => [FeaturedReview])
+  async featuredReviews(
+    @Arg("limit", () => Int, { nullable: true }) limit: number = 10,
+  ): Promise<FeaturedReview[]> {
+    const reviews = await prisma.review.findMany({
+      where: {
+        rating: { gte: 4 },
+        review: { not: null },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: limit,
+    });
+
+    return reviews.map((review) => ({
+      id: review.id,
+      user_id: review.user_id,
+      rating: review.rating,
+      review: review.review,
+      image_urls: review.image_urls,
+      product_id: review.product_id,
+      event_id: review.event_id,
+      created_at: review.created_at,
+      user: {
+        id: review.user.id,
+        name: review.user.name,
+        image: review.user.image,
+      },
+    }));
+  }
+
   @Query(() => ReviewsResponse)
   async productReviews(
     @Arg("productId", () => Int) productId: number,

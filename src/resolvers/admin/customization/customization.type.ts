@@ -10,8 +10,11 @@ export class AdminCustomizationOption {
   @Field(() => Int)
   id!: number;
 
+  @Field(() => Int)
+  customize_category_id!: number;
+
   @Field(() => String)
-  category!: string;
+  category_name!: string;
 
   @Field(() => String)
   type!: string;
@@ -47,8 +50,8 @@ export class AdminCustomizationOptionsFilterInput {
   @Field(() => String, { nullable: true })
   search?: string;
 
-  @Field(() => String, { nullable: true })
-  category?: string;
+  @Field(() => Int, { nullable: true })
+  customize_category_id?: number;
 
   @Field(() => String, { nullable: true })
   type?: string;
@@ -103,8 +106,8 @@ export class AdminCustomizationMutationResponse {
 
 @InputType()
 export class CreateCustomizationOptionInput {
-  @Field(() => String)
-  category!: string;
+  @Field(() => Int)
+  customize_category_id!: number;
 
   @Field(() => String)
   type!: string;
@@ -131,8 +134,8 @@ export class CreateCustomizationOptionInput {
 
 @InputType()
 export class UpdateCustomizationOptionInput {
-  @Field(() => String, { nullable: true })
-  category?: string;
+  @Field(() => Int, { nullable: true })
+  customize_category_id?: number;
 
   @Field(() => String, { nullable: true })
   type?: string;
@@ -159,6 +162,9 @@ export class UpdateCustomizationOptionInput {
 
 @ObjectType()
 export class AdminCustomizationCategorySummary {
+  @Field(() => Int)
+  id!: number;
+
   @Field(() => String)
   category!: string;
 

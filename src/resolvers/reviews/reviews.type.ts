@@ -145,3 +145,33 @@ export class ToggleReviewLikeResponse {
   @Field(() => String, { nullable: true })
   error?: string | null;
 }
+
+@ObjectType()
+export class FeaturedReview {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => Int)
+  user_id!: number;
+
+  @Field(() => Int)
+  rating!: number;
+
+  @Field(() => String, { nullable: true })
+  review?: string | null;
+
+  @Field(() => [String])
+  image_urls!: string[];
+
+  @Field(() => Int, { nullable: true })
+  product_id?: number | null;
+
+  @Field(() => String, { nullable: true })
+  event_id?: string | null;
+
+  @Field(() => GraphQLDateTime)
+  created_at!: Date;
+
+  @Field(() => ReviewUser)
+  user!: ReviewUser;
+}

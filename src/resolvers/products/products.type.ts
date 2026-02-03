@@ -339,3 +339,27 @@ export class ProductsResponse {
   @Field(() => ProductsMeta)
   meta!: ProductsMeta;
 }
+
+@ObjectType()
+export class CategoryWithImage {
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  image_url?: string | null;
+}
+
+@ObjectType()
+export class RecommendedProductsResponse {
+  @Field(() => [ProductBase])
+  products!: ProductBase[];
+
+  @Field(() => Int)
+  total!: number;
+
+  @Field(() => Int)
+  page!: number;
+
+  @Field(() => Int)
+  total_pages!: number;
+}

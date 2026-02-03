@@ -30,7 +30,7 @@ export class AdminCustomizationResolver {
   ): Promise<AdminCustomizationOptionsResponse> {
     return tryCatchAsync(async () => {
       const search = filter?.search ?? "";
-      const category = filter?.category;
+      const customizeCategoryId = filter?.customize_category_id;
       const type = filter?.type;
       const isActive = filter?.isActive;
       const page = filter?.page ?? 1;
@@ -38,8 +38,12 @@ export class AdminCustomizationResolver {
       const skip = (page - 1) * limit;
 
       const where: {
-        OR?: { name?: object; value?: object; category?: object }[];
-        category?: string;
+        OR?: {
+          name?: object;
+          value?: object;
+          customize_category?: { category?: object };
+        }[];
+        customize_category_id?: number;
         type?: string;
         is_active?: boolean;
       } = {};
@@ -48,12 +52,16 @@ export class AdminCustomizationResolver {
         where.OR = [
           { name: { contains: search, mode: "insensitive" } },
           { value: { contains: search, mode: "insensitive" } },
-          { category: { contains: search, mode: "insensitive" } },
+          {
+            customize_category: {
+              category: { contains: search, mode: "insensitive" },
+            },
+          },
         ];
       }
 
-      if (category) {
-        where.category = category;
+      if (customizeCategoryId) {
+        where.customize_category_id = customizeCategoryId;
       }
 
       if (type) {
@@ -67,10 +75,15 @@ export class AdminCustomizationResolver {
       const [options, total] = await Promise.all([
         ctx.prisma.customizationOption.findMany({
           where,
+          include: {
+            customize_category: {
+              select: { category: true },
+            },
+          },
           skip,
           take: limit,
           orderBy: [
-            { category: "asc" },
+            { customize_category: { category: "asc" } },
             { type: "asc" },
             { sort_order: "asc" },
             { name: "asc" },
@@ -80,7 +93,10 @@ export class AdminCustomizationResolver {
       ]);
 
       return {
-        options: options as AdminCustomizationOption[],
+        options: options.map((opt) => ({
+          ...opt,
+          category_name: opt.customize_category.category,
+        })) as AdminCustomizationOption[],
         total,
         page,
         limit,
@@ -99,9 +115,21 @@ export class AdminCustomizationResolver {
     return tryCatchAsync(async () => {
       const option = await ctx.prisma.customizationOption.findUnique({
         where: { id },
+        include: {
+          customize_category: {
+            select: { category: true },
+          },
+        },
       });
 
-      return option as AdminCustomizationOption | null;
+      if (!option) {
+        return null;
+      }
+
+      return {
+        ...option,
+        category_name: option.customize_category.category,
+      } as AdminCustomizationOption;
     });
   }
 
@@ -112,15 +140,19 @@ export class AdminCustomizationResolver {
     @Ctx() ctx: Context,
   ): Promise<AdminCustomizationCategorySummary[]> {
     return tryCatchAsync(async () => {
-      const categories = await ctx.prisma.customizationOption.groupBy({
-        by: ["category"],
-        _count: { id: true },
+      const categories = await ctx.prisma.customizeCategory.findMany({
+        include: {
+          _count: {
+            select: { options: true },
+          },
+        },
         orderBy: { category: "asc" },
       });
 
       return categories.map((c) => ({
+        id: c.id,
         category: c.category,
-        count: c._count.id,
+        count: c._count.options,
       }));
     });
   }
@@ -155,7 +187,7 @@ export class AdminCustomizationResolver {
   ): Promise<AdminCustomizationMutationResponse> {
     return tryCatchAsync(async () => {
       const {
-        category,
+        customize_category_id,
         type,
         name,
         value,
@@ -164,10 +196,28 @@ export class AdminCustomizationResolver {
         is_active = true,
       } = input;
 
-      // Check for unique constraint violation (category + type + value)
+      // Validate that the category exists
+      const categoryExists = await ctx.prisma.customizeCategory.findUnique({
+        where: { id: customize_category_id },
+        select: { id: true },
+      });
+
+      if (!categoryExists) {
+        return {
+          success: false,
+          optionId: null,
+          error: "Customization category not found",
+        };
+      }
+
+      // Check for unique constraint violation (customize_category_id + type + value)
       const existingOption = await ctx.prisma.customizationOption.findUnique({
         where: {
-          category_type_value: { category, type, value },
+          customize_category_id_type_value: {
+            customize_category_id,
+            type,
+            value,
+          },
         },
         select: { id: true },
       });
@@ -183,7 +233,7 @@ export class AdminCustomizationResolver {
 
       const option = await ctx.prisma.customizationOption.create({
         data: {
-          category,
+          customize_category_id,
           type,
           name,
           value,
@@ -216,7 +266,12 @@ export class AdminCustomizationResolver {
       // Check if option exists
       const existingOption = await ctx.prisma.customizationOption.findUnique({
         where: { id },
-        select: { id: true, category: true, type: true, value: true },
+        select: {
+          id: true,
+          customize_category_id: true,
+          type: true,
+          value: true,
+        },
       });
 
       if (!existingOption) {
@@ -227,21 +282,38 @@ export class AdminCustomizationResolver {
         };
       }
 
-      // If updating category, type, or value, check for unique constraint
-      const newCategory = input.category ?? existingOption.category;
+      // Validate category exists if changing it
+      if (input.customize_category_id !== undefined) {
+        const categoryExists = await ctx.prisma.customizeCategory.findUnique({
+          where: { id: input.customize_category_id },
+          select: { id: true },
+        });
+
+        if (!categoryExists) {
+          return {
+            success: false,
+            optionId: null,
+            error: "Customization category not found",
+          };
+        }
+      }
+
+      // If updating customize_category_id, type, or value, check for unique constraint
+      const newCategoryId =
+        input.customize_category_id ?? existingOption.customize_category_id;
       const newType = input.type ?? existingOption.type;
       const newValue = input.value ?? existingOption.value;
 
       // Check if the new combination would conflict with another record
       if (
-        input.category !== undefined ||
+        input.customize_category_id !== undefined ||
         input.type !== undefined ||
         input.value !== undefined
       ) {
         const conflictingOption =
           await ctx.prisma.customizationOption.findFirst({
             where: {
-              category: newCategory,
+              customize_category_id: newCategoryId,
               type: newType,
               value: newValue,
               NOT: { id },

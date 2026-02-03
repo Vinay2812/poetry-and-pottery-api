@@ -8,37 +8,45 @@ class CustomizationCache extends BaseCache {
   private keys = {
     categories: (filter: Record<string, unknown>) =>
       `customization:categories:${this.hashFilter(filter)}`,
-    optionsByCategory: (category: string, type?: string) =>
-      `customization:options:${category}:${type ?? "all"}`,
+    optionsByCategory: (categoryId: number, type?: string) =>
+      `customization:options:${categoryId}:${type ?? "all"}`,
   };
 
-  // Get all customization categories
+  // Get all customization category IDs
   async getCategoriesList() {
     return this.getOrSet(
       `query:customization:categories`,
       async () => {
-        const categories = await prisma.customizationOption.groupBy({
-          by: ["category"],
+        const categories = await prisma.customizeCategory.findMany({
+          where: { is_active: true },
+          select: { id: true, category: true },
           orderBy: { category: "asc" },
         });
-        return categories.map((c) => c.category);
+        return categories;
       },
       CACHE_TTL.SEMI_STATIC,
     );
   }
 
-  // Get customization options by category
-  async getOptionsByCategory(category: string, type?: string) {
-    const cacheKey = `query:customization:options:${category}:${type ?? "all"}`;
+  // Get customization options by category ID
+  async getOptionsByCategoryId(categoryId: number, type?: string) {
+    const cacheKey = `query:customization:options:${categoryId}:${type ?? "all"}`;
     return this.getOrSet(
       cacheKey,
       async () => {
-        const where: { category: string; type?: string } = { category };
+        const where: { customize_category_id: number; type?: string } = {
+          customize_category_id: categoryId,
+        };
         if (type) {
           where.type = type;
         }
         return prisma.customizationOption.findMany({
           where,
+          include: {
+            customize_category: {
+              select: { category: true },
+            },
+          },
           orderBy: { name: "asc" },
         });
       },
@@ -65,8 +73,8 @@ class CustomizationCache extends BaseCache {
     await this.delete(`query:customization:categories`);
   }
 
-  async invalidateOptionsByCategory(category: string): Promise<void> {
-    await this.invalidatePattern(`query:customization:options:${category}:*`);
+  async invalidateOptionsByCategoryId(categoryId: number): Promise<void> {
+    await this.invalidatePattern(`query:customization:options:${categoryId}:*`);
   }
 
   async invalidateTypesList(): Promise<void> {
@@ -90,12 +98,12 @@ class CustomizationCache extends BaseCache {
   }
 
   optionsByCategory<T>(
-    category: string,
+    categoryId: number,
     type: string | undefined,
     factory: () => Promise<T>,
   ): Promise<T> {
     return this.getOrSet(
-      this.keys.optionsByCategory(category, type),
+      this.keys.optionsByCategory(categoryId, type),
       factory,
       CACHE_TTL.SEMI_STATIC,
     );

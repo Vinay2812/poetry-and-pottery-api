@@ -98,3 +98,12 @@ export class AddressMutationResponse {
   @Field(() => UserAddress, { nullable: true })
   address?: UserAddress | null;
 }
+
+@ObjectType()
+export class UserAddressesResponse {
+  @Field(() => [UserAddress])
+  addresses!: UserAddress[];
+
+  @Field(() => Int)
+  total!: number;
+}

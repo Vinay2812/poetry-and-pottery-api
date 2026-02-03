@@ -23,3 +23,4 @@ export * from "./admin/content/content.resolver";
 export * from "./admin/settings/settings.resolver";
 export * from "./admin/uploads/uploads.resolver";
 export * from "./admin/customization/customization.resolver";
+export * from "./admin/customization/customize-category.resolver";

@@ -38,10 +38,9 @@ export class CustomizationResolver {
         const skip = (page - 1) * limit;
         const search = filter?.search?.trim().toLowerCase();
 
-        // Get unique categories with options count
+        // Get categories from CustomizeCategory table
         const categoriesWithCounts =
-          await ctx.prisma.customizationOption.groupBy({
-            by: ["category"],
+          await ctx.prisma.customizeCategory.findMany({
             where: {
               is_active: true,
               ...(search && {
@@ -51,8 +50,10 @@ export class CustomizationResolver {
                 },
               }),
             },
-            _count: {
-              id: true,
+            include: {
+              _count: {
+                select: { options: true },
+              },
             },
             orderBy: {
               category: "asc",
@@ -68,51 +69,14 @@ export class CustomizationResolver {
           skip + limit,
         );
 
-        // Get base prices and images from products for each category
-        const categoryNames = paginatedCategories.map((c) => c.category);
-
-        // Get category data with min price and first image
-        const categoryData = await ctx.prisma.productCategory.findMany({
-          where: {
-            category: {
-              in: categoryNames,
-            },
-            product: {
-              is_active: true,
-            },
-          },
-          select: {
-            category: true,
-            product: {
-              select: {
-                price: true,
-                image_urls: true,
-              },
-            },
-          },
-        });
-
-        // Create maps for quick lookup
-        const priceMap = new Map<string, number>();
-        const imageMap = new Map<string, string | null>();
-
-        for (const pc of categoryData) {
-          const currentPrice = priceMap.get(pc.category);
-          if (currentPrice === undefined || pc.product.price < currentPrice) {
-            priceMap.set(pc.category, pc.product.price);
-          }
-          if (!imageMap.has(pc.category) && pc.product.image_urls.length > 0) {
-            imageMap.set(pc.category, pc.product.image_urls[0]);
-          }
-        }
-
-        // Build categories array
+        // Build categories array (base_price and image_url come from CustomizeCategory table now)
         const categories: CustomizationCategory[] = paginatedCategories.map(
           (c) => ({
+            id: c.id,
             category: c.category,
-            options_count: c._count.id,
-            base_price: priceMap.get(c.category) ?? 0,
-            image_url: imageMap.get(c.category) ?? null,
+            options_count: c._count.options,
+            base_price: c.base_price,
+            image_url: c.image_url,
           }),
         );
 
@@ -138,16 +102,32 @@ export class CustomizationResolver {
     filter: CustomizationOptionsFilterInput,
   ): Promise<CustomizationOptionsResponse> {
     return customizationCache.optionsByCategory(
-      filter.category,
+      filter.customize_category_id,
       filter.type,
       async () => {
         return tryCatchAsync(async () => {
-          const { category, type } = filter;
+          const { customize_category_id, type } = filter;
+
+          // Get the category to retrieve its name
+          const customizeCategory =
+            await ctx.prisma.customizeCategory.findUnique({
+              where: { id: customize_category_id },
+              select: { id: true, category: true },
+            });
+
+          if (!customizeCategory) {
+            return {
+              customize_category_id,
+              category_name: "",
+              options_by_type: [],
+              total_options: 0,
+            };
+          }
 
           // Get all active options for the category
           const options = await ctx.prisma.customizationOption.findMany({
             where: {
-              category,
+              customize_category_id,
               is_active: true,
               ...(type && { type }),
             },
@@ -155,11 +135,38 @@ export class CustomizationResolver {
           });
 
           // Group options by type
-          const optionsByTypeMap = new Map<string, (typeof options)[0][]>();
+          const optionsByTypeMap = new Map<
+            string,
+            Array<{
+              id: number;
+              customize_category_id: number;
+              category_name: string;
+              type: string;
+              name: string;
+              value: string;
+              price_modifier: number;
+              sort_order: number;
+              is_active: boolean;
+              created_at: Date;
+              updated_at: Date;
+            }>
+          >();
 
           for (const option of options) {
             const existing = optionsByTypeMap.get(option.type) ?? [];
-            existing.push(option);
+            existing.push({
+              id: option.id,
+              customize_category_id: option.customize_category_id,
+              category_name: customizeCategory.category,
+              type: option.type,
+              name: option.name,
+              value: option.value,
+              price_modifier: option.price_modifier,
+              sort_order: option.sort_order,
+              is_active: option.is_active,
+              created_at: option.created_at,
+              updated_at: option.updated_at,
+            });
             optionsByTypeMap.set(option.type, existing);
           }
 
@@ -172,7 +179,8 @@ export class CustomizationResolver {
           }));
 
           return {
-            category,
+            customize_category_id,
+            category_name: customizeCategory.category,
             options_by_type: optionsByType,
             total_options: options.length,
           };

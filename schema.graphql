@@ -165,6 +165,7 @@ type AdminContentPageListItem {
 type AdminCustomizationCategorySummary {
   category: String!
   count: Int!
+  id: Int!
 }
 
 type AdminCustomizationMutationResponse {
@@ -174,8 +175,9 @@ type AdminCustomizationMutationResponse {
 }
 
 type AdminCustomizationOption {
-  category: String!
+  category_name: String!
   created_at: DateTime!
+  customize_category_id: Int!
   id: Int!
   is_active: Boolean!
   name: String!
@@ -187,7 +189,7 @@ type AdminCustomizationOption {
 }
 
 input AdminCustomizationOptionsFilterInput {
-  category: String
+  customize_category_id: Int
   isActive: Boolean
   limit: Int = 20
   page: Int = 1
@@ -206,6 +208,29 @@ type AdminCustomizationOptionsResponse {
 type AdminCustomizationTypeSummary {
   count: Int!
   type: String!
+}
+
+type AdminCustomizeCategoriesResponse {
+  categories: [AdminCustomizeCategory!]!
+  total: Int!
+}
+
+type AdminCustomizeCategory {
+  base_price: Int!
+  category: String!
+  created_at: DateTime!
+  id: Int!
+  image_url: String
+  is_active: Boolean!
+  options: [AdminCustomizationOption!]!
+  options_count: Int!
+  updated_at: DateTime!
+}
+
+type AdminCustomizeCategoryMutationResponse {
+  categoryId: Int
+  error: String
+  success: Boolean!
 }
 
 type AdminEvent {
@@ -714,6 +739,11 @@ type CartResponse {
   total: Int!
 }
 
+type CategoryWithImage {
+  image_url: String
+  name: String!
+}
+
 type CollectionBase {
   created_at: DateTime!
   description: String
@@ -755,13 +785,20 @@ input CreateCollectionInput {
 }
 
 input CreateCustomizationOptionInput {
-  category: String!
+  customize_category_id: Int!
   is_active: Boolean = true
   name: String!
   price_modifier: Int = 0
   sort_order: Int = 0
   type: String!
   value: String!
+}
+
+input CreateCustomizeCategoryInput {
+  base_price: Int = 0
+  category: String!
+  image_url: String
+  is_active: Boolean = true
 }
 
 input CreateEventInput {
@@ -847,13 +884,15 @@ type CustomizationCategoriesResponse {
 type CustomizationCategory {
   base_price: Int!
   category: String!
+  id: Int!
   image_url: String
   options_count: Int!
 }
 
 type CustomizationOption {
-  category: String!
+  category_name: String!
   created_at: DateTime!
+  customize_category_id: Int!
   id: Int!
   is_active: Boolean!
   name: String!
@@ -870,12 +909,13 @@ type CustomizationOptionsByType {
 }
 
 input CustomizationOptionsFilterInput {
-  category: String!
+  customize_category_id: Int!
   type: String
 }
 
 type CustomizationOptionsResponse {
-  category: String!
+  category_name: String!
+  customize_category_id: Int!
   options_by_type: [CustomizationOptionsByType!]!
   total_options: Int!
 }
@@ -1078,6 +1118,18 @@ type FAQPageContent {
   categories: [FAQCategory!]!
 }
 
+type FeaturedReview {
+  created_at: DateTime!
+  event_id: String
+  id: Int!
+  image_urls: [String!]!
+  product_id: Int
+  rating: Int!
+  review: String
+  user: ReviewUser!
+  user_id: Int!
+}
+
 input GetPresignedUploadUrlInput {
   contentType: String!
   fileSize: Int!
@@ -1134,11 +1186,13 @@ type Mutation {
   adminBulkDeleteProducts(input: BulkDeleteProductsInput!): AdminBulkDeleteProductsResponse!
   adminCreateCollection(input: CreateCollectionInput!): AdminCollectionMutationResponse!
   adminCreateCustomizationOption(input: CreateCustomizationOptionInput!): AdminCustomizationMutationResponse!
+  adminCreateCustomizeCategory(input: CreateCustomizeCategoryInput!): AdminCustomizeCategoryMutationResponse!
   adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
   adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!
   adminDeleteCategory(name: String!): AdminCategoryMutationResponse!
   adminDeleteCollection(id: Int!): AdminCollectionMutationResponse!
   adminDeleteCustomizationOption(id: Int!): AdminCustomizationMutationResponse!
+  adminDeleteCustomizeCategory(id: Int!): AdminCustomizeCategoryMutationResponse!
   adminDeleteEvent(id: String!): AdminEventMutationResponse!
   adminDeleteProduct(id: Int!): AdminMutationResponse!
   adminGetPresignedUploadUrl(input: GetPresignedUploadUrlInput!): PresignedUploadUrlResponse!
@@ -1146,12 +1200,14 @@ type Mutation {
   adminRenameCategory(newName: String!, oldName: String!): AdminCategoryMutationResponse!
   adminToggleContentPageActive(slug: String!): AdminContentMutationResponse!
   adminToggleCustomizationOptionActive(id: Int!): AdminCustomizationMutationResponse!
+  adminToggleCustomizeCategoryActive(id: Int!): AdminCustomizeCategoryMutationResponse!
   adminToggleProductActive(id: Int!): AdminMutationResponse!
   adminUpdateCategoryIcon(category: String!, icon: String!): AdminCategoryMutationResponse!
   adminUpdateCollection(id: Int!, input: UpdateCollectionInput!): AdminCollectionMutationResponse!
   adminUpdateContactInfo(input: UpdateContactInfoInput!): AdminSettingsMutationResponse!
   adminUpdateContentPage(input: UpdateContentPageInput!, slug: String!): AdminContentMutationResponse!
   adminUpdateCustomizationOption(id: Int!, input: UpdateCustomizationOptionInput!): AdminCustomizationMutationResponse!
+  adminUpdateCustomizeCategory(id: Int!, input: UpdateCustomizeCategoryInput!): AdminCustomizeCategoryMutationResponse!
   adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
   adminUpdateEventStatus(id: String!, status: String!): AdminEventMutationResponse!
   adminUpdateHeroImages(input: UpdateHeroImagesInput!): AdminSettingsMutationResponse!
@@ -1443,6 +1499,8 @@ type Query {
   adminCustomizationOptionById(id: Int!): AdminCustomizationOption
   adminCustomizationOptions(filter: AdminCustomizationOptionsFilterInput): AdminCustomizationOptionsResponse!
   adminCustomizationTypes: [AdminCustomizationTypeSummary!]!
+  adminCustomizeCategories: AdminCustomizeCategoriesResponse!
+  adminCustomizeCategoryById(id: Int!): AdminCustomizeCategory
   adminDashboardStats: DashboardStats!
   adminEventById(id: String!): AdminEventDetail
   adminEventLevelOptions: [AdminLevelOption!]!
@@ -1469,6 +1527,7 @@ type Query {
   adminUsers(filter: AdminUsersFilterInput): AdminUsersResponse!
   cart: CartResponse!
   categories: [String!]!
+  categoriesWithImages: [CategoryWithImage!]!
   collections(limit: Int, page: Int): [CollectionBase!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   customizationCategories(filter: CustomizationCategoriesFilterInput): CustomizationCategoriesResponse!
@@ -1478,6 +1537,7 @@ type Query {
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
+  featuredReviews(limit: Int): [FeaturedReview!]!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
   newsletterStatus: NewsletterStatus!
   order(id: String!): Order
@@ -1493,9 +1553,11 @@ type Query {
   publicPrivacyContent: PrivacyPageContent
   publicShippingContent: ShippingPageContent
   publicTermsContent: TermsPageContent
+  recommendedProducts(limit: Int, page: Int, productId: Int): RecommendedProductsResponse!
   upcomingEvents(filter: EventsFilterInput): EventsResponse!
   upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
+  userAddresses: UserAddressesResponse!
   userCounts: UserCounts!
   userRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
@@ -1532,6 +1594,13 @@ type RecentRegistrationEvent {
 type RecentRegistrationUser {
   email: String!
   name: String
+}
+
+type RecommendedProductsResponse {
+  page: Int!
+  products: [ProductBase!]!
+  total: Int!
+  total_pages: Int!
 }
 
 input RegisterForEventInput {
@@ -1782,13 +1851,20 @@ input UpdateContentPageInput {
 }
 
 input UpdateCustomizationOptionInput {
-  category: String
+  customize_category_id: Int
   is_active: Boolean
   name: String
   price_modifier: Int
   sort_order: Int
   type: String
   value: String
+}
+
+input UpdateCustomizeCategoryInput {
+  base_price: Int
+  category: String
+  image_url: String
+  is_active: Boolean
 }
 
 input UpdateEventInput {
@@ -1862,6 +1938,11 @@ type UserAddress {
   state: String!
   user_id: Int!
   zip: String!
+}
+
+type UserAddressesResponse {
+  addresses: [UserAddress!]!
+  total: Int!
 }
 
 type UserCounts {

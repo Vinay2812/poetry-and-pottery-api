@@ -739,18 +739,16 @@ export class AdminContentResolver {
       return null;
     }
 
-    return config.defaultContent;
+    const page = await ctx.prisma.contentPage.findFirst({
+      where: { slug, is_active: true },
+      select: { content: true },
+    });
 
-    // const page = await ctx.prisma.contentPage.findFirst({
-    //   where: { slug, is_active: true },
-    //   select: { content: true },
-    // });
-
-    // // Merge stored content with defaults - missing fields fallback to defaults
-    // return mergeWithDefaults(
-    //   page?.content as ContentPageContent | null,
-    //   config.defaultContent,
-    // );
+    // Merge stored content with defaults - missing fields fallback to defaults
+    return mergeWithDefaults(
+      page?.content as ContentPageContent | null,
+      config.defaultContent,
+    );
   }
 
   @Query(() => AboutPageContent, { nullable: true })

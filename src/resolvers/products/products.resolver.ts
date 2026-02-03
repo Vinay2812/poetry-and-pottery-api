@@ -6,6 +6,7 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import { productCache } from "./products.cache";
 import {
+  CategoryWithImage,
   CollectionBase,
   PriceHistogramBucket,
   ProductBase,
@@ -15,6 +16,7 @@ import {
   ProductsFilterInput,
   ProductsMeta,
   ProductsResponse,
+  RecommendedProductsResponse,
 } from "./products.type";
 
 function getOrderBy(orderBy?: ProductOrderBy) {
@@ -497,6 +499,213 @@ export class ProductsResolver {
           products_count: collection._count.products,
         }));
       });
+    });
+  }
+
+  @Query(() => [CategoryWithImage])
+  async categoriesWithImages(
+    @Ctx() ctx: Context,
+  ): Promise<CategoryWithImage[]> {
+    return tryCatchAsync(async () => {
+      // Get unique categories from products
+      const categoryData = await ctx.prisma.productCategory.groupBy({
+        by: ["category"],
+        _count: { category: true },
+        orderBy: { _count: { category: "desc" } },
+      });
+
+      // Get category images from site settings
+      const setting = await ctx.prisma.siteSetting.findUnique({
+        where: { key: "category_images" },
+      });
+
+      const categoryImages: Record<string, string> =
+        setting && typeof setting.value === "object" && setting.value !== null
+          ? (setting.value as Record<string, string>)
+          : {};
+
+      return categoryData.map((c) => ({
+        name: c.category,
+        image_url: categoryImages[c.category] || null,
+      }));
+    });
+  }
+
+  @Query(() => RecommendedProductsResponse)
+  async recommendedProducts(
+    @Ctx() ctx: Context,
+    @Arg("limit", () => Int, { nullable: true }) limit: number = 10,
+    @Arg("page", () => Int, { nullable: true }) page: number = 1,
+    @Arg("productId", () => Int, { nullable: true }) productId?: number,
+  ): Promise<RecommendedProductsResponse> {
+    return tryCatchAsync(async () => {
+      const userId = ctx.user?.dbUserId ?? null;
+      const offset = (page - 1) * limit;
+
+      // Get user's purchased product categories for personalization
+      let userCategories: string[] = [];
+      if (userId) {
+        const purchasedProducts =
+          await ctx.prisma.purchasedProductItem.findMany({
+            where: { order: { user_id: userId } },
+            include: {
+              product: {
+                include: { product_categories: { select: { category: true } } },
+              },
+            },
+            take: 20,
+          });
+        userCategories = [
+          ...new Set(
+            purchasedProducts.flatMap((p) =>
+              p.product.product_categories.map((c) => c.category),
+            ),
+          ),
+        ];
+      }
+
+      // If we have a productId, get its categories for "related" recommendations
+      let productCategories: string[] = [];
+      if (productId) {
+        const product = await ctx.prisma.product.findUnique({
+          where: { id: productId },
+          include: { product_categories: { select: { category: true } } },
+        });
+        if (product) {
+          productCategories = product.product_categories.map((c) => c.category);
+        }
+      }
+
+      const categoriesToUse =
+        productCategories.length > 0 ? productCategories : userCategories;
+
+      const now = new Date();
+
+      const baseWhere = {
+        is_active: true,
+        available_quantity: { gt: 0 },
+        OR: [
+          { collection_id: null },
+          {
+            AND: [
+              {
+                OR: [
+                  { collection: { starts_at: null } },
+                  { collection: { starts_at: { lte: now } } },
+                ],
+              },
+              {
+                OR: [
+                  { collection: { ends_at: null } },
+                  { collection: { ends_at: { gte: now } } },
+                ],
+              },
+            ],
+          },
+        ],
+        ...(productId && { id: { not: productId } }),
+      };
+
+      // Try to get products from user's preferred categories first
+      let products;
+      let total;
+
+      if (categoriesToUse.length > 0) {
+        const categoryWhere = {
+          ...baseWhere,
+          product_categories: {
+            some: { category: { in: categoriesToUse } },
+          },
+        };
+
+        [products, total] = await Promise.all([
+          ctx.prisma.product.findMany({
+            where: categoryWhere,
+            include: {
+              reviews: { select: { rating: true } },
+              collection: {
+                include: { _count: { select: { products: true } } },
+              },
+            },
+            orderBy: [
+              { purchased_products: { _count: "desc" } },
+              { id: "desc" },
+            ],
+            skip: offset,
+            take: limit,
+          }),
+          ctx.prisma.product.count({ where: categoryWhere }),
+        ]);
+
+        // If not enough products, fill with popular products
+        if (products.length < limit) {
+          const remainingLimit = limit - products.length;
+          const excludeIds = products.map((p) => p.id);
+          if (productId) excludeIds.push(productId);
+
+          const additionalProducts = await ctx.prisma.product.findMany({
+            where: {
+              ...baseWhere,
+              id: { notIn: excludeIds },
+            },
+            include: {
+              reviews: { select: { rating: true } },
+              collection: {
+                include: { _count: { select: { products: true } } },
+              },
+            },
+            orderBy: [
+              { purchased_products: { _count: "desc" } },
+              { id: "desc" },
+            ],
+            take: remainingLimit,
+          });
+
+          products = [...products, ...additionalProducts];
+        }
+      } else {
+        // No categories to use, just get popular products
+        [products, total] = await Promise.all([
+          ctx.prisma.product.findMany({
+            where: baseWhere,
+            include: {
+              reviews: { select: { rating: true } },
+              collection: {
+                include: { _count: { select: { products: true } } },
+              },
+            },
+            orderBy: [
+              { purchased_products: { _count: "desc" } },
+              { id: "desc" },
+            ],
+            skip: offset,
+            take: limit,
+          }),
+          ctx.prisma.product.count({ where: baseWhere }),
+        ]);
+      }
+
+      // Get user's wishlist
+      let wishlistIds = new Set<number>();
+      if (userId) {
+        const productIds = products.map((p) => p.id);
+        const wishlistItems = await ctx.prisma.wishlist.findMany({
+          where: { user_id: userId, product_id: { in: productIds } },
+          select: { product_id: true },
+        });
+        wishlistIds = new Set(wishlistItems.map((w) => w.product_id));
+      }
+
+      const mappedProducts = products.map((product) =>
+        mapToProductBase(product, wishlistIds),
+      );
+
+      return {
+        products: mappedProducts,
+        total,
+        page,
+        total_pages: Math.ceil(total / limit),
+      };
     });
   }
 }
