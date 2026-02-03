@@ -1,11 +1,10 @@
 import "reflect-metadata";
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
 import { eventCache } from "@/resolvers/events/events.cache";
 import {
   EventLevel,
-  EventRegistrationStatus,
   EventStatus,
   EventType,
 } from "@/resolvers/events/events.type";
@@ -498,34 +497,6 @@ export class AdminEventsResolver {
         await tx.event.update({ where: { id }, data: { status } });
         return { success: true, eventId: id, error: null };
       });
-    });
-  }
-
-  @Mutation(() => AdminEventMutationResponse)
-  @adminRequired()
-  async adminDeleteEventReview(
-    @Ctx() ctx: Context,
-    @Arg("reviewId", () => Int) reviewId: number,
-  ): Promise<AdminEventMutationResponse> {
-    return tryCatchAsync(async () => {
-      const review = await ctx.prisma.review.findUnique({
-        where: { id: reviewId },
-        select: { event_id: true },
-      });
-
-      if (!review) {
-        return { success: false, eventId: null, error: "Review not found" };
-      }
-
-      await ctx.prisma.review.delete({
-        where: { id: reviewId },
-      });
-
-      return {
-        success: true,
-        eventId: review.event_id,
-        error: null,
-      };
     });
   }
 

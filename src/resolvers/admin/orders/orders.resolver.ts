@@ -213,38 +213,6 @@ export class AdminOrdersResolver {
 
   @Mutation(() => AdminOrderMutationResponse)
   @adminRequired()
-  async adminUpdateOrderPrice(
-    @Ctx() ctx: Context,
-    @Arg("orderId", () => String) orderId: string,
-    @Arg("total", () => Float) newTotal: number,
-  ): Promise<AdminOrderMutationResponse> {
-    return tryCatchAsync(async () => {
-      if (newTotal < 0) {
-        return { success: false, error: "Price cannot be negative" };
-      }
-
-      const order = await ctx.prisma.productOrder.findUnique({
-        where: { id: orderId },
-        select: { id: true, user_id: true },
-      });
-
-      if (!order) {
-        return { success: false, error: "Order not found" };
-      }
-
-      await ctx.prisma.productOrder.update({
-        where: { id: orderId },
-        data: { total: newTotal },
-      });
-
-      await orderCache.invalidateUserOrders(order.user_id);
-
-      return { success: true, error: null };
-    });
-  }
-
-  @Mutation(() => AdminOrderMutationResponse)
-  @adminRequired()
   async adminUpdateOrderDiscount(
     @Ctx() ctx: Context,
     @Arg("orderId", () => String) orderId: string,

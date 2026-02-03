@@ -71,36 +71,4 @@ export class NewsletterResolver {
       };
     });
   }
-
-  @Mutation(() => NewsletterMutationResponse)
-  @authRequired()
-  async unsubscribeFromNewsletter(
-    @Ctx() ctx: Context,
-  ): Promise<NewsletterMutationResponse> {
-    return tryCatchAsync(async () => {
-      const userId = getUserId(ctx);
-
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: {
-          subscribed_to_newsletter: false,
-          newsletter_subscribed_at: null,
-        },
-        select: {
-          subscribed_to_newsletter: true,
-          newsletter_subscribed_at: true,
-        },
-      });
-
-      await newsletterCache.invalidateUserStatus(userId);
-
-      return {
-        success: true,
-        status: {
-          subscribed: user.subscribed_to_newsletter,
-          subscribed_at: user.newsletter_subscribed_at,
-        },
-      };
-    });
-  }
 }

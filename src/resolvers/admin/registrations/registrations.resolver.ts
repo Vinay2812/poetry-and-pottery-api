@@ -1,4 +1,4 @@
-import { Arg, Ctx, Float, Mutation, Resolver } from "type-graphql";
+import { Arg, Ctx, Mutation, Resolver } from "type-graphql";
 
 import { adminRequired } from "@/middlewares/auth.middleware";
 import { EventRegistrationStatus } from "@/prisma/generated/client";
@@ -240,38 +240,6 @@ export class AdminRegistrationsResolver {
       await ctx.prisma.eventRegistration.update({
         where: { id: registrationId },
         data: updateData,
-      });
-
-      await registrationCache.invalidateUserRegistrations(registration.user_id);
-
-      return { success: true, error: null };
-    });
-  }
-
-  @Mutation(() => AdminRegistrationMutationResponse)
-  @adminRequired()
-  async adminUpdateRegistrationPrice(
-    @Ctx() ctx: Context,
-    @Arg("registrationId", () => String) registrationId: string,
-    @Arg("price", () => Float) newPrice: number,
-  ): Promise<AdminRegistrationMutationResponse> {
-    return tryCatchAsync(async () => {
-      if (newPrice < 0) {
-        return { success: false, error: "Price cannot be negative" };
-      }
-
-      const registration = await ctx.prisma.eventRegistration.findUnique({
-        where: { id: registrationId },
-        select: { id: true, user_id: true },
-      });
-
-      if (!registration) {
-        return { success: false, error: "Registration not found" };
-      }
-
-      await ctx.prisma.eventRegistration.update({
-        where: { id: registrationId },
-        data: { price: newPrice },
       });
 
       await registrationCache.invalidateUserRegistrations(registration.user_id);

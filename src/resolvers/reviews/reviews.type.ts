@@ -132,15 +132,6 @@ export class CreateReviewResponse {
 }
 
 @ObjectType()
-export class DeleteReviewResponse {
-  @Field(() => Boolean)
-  success!: boolean;
-
-  @Field(() => String, { nullable: true })
-  error?: string | null;
-}
-
-@ObjectType()
 export class ToggleReviewLikeResponse {
   @Field(() => Boolean)
   success!: boolean;

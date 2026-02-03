@@ -416,33 +416,6 @@ export class AdminProductsResolver {
     });
   }
 
-  @Mutation(() => AdminMutationResponse)
-  @adminRequired()
-  async adminDeleteProductReview(
-    @Ctx() ctx: Context,
-    @Arg("reviewId", () => Int) reviewId: number,
-  ): Promise<AdminMutationResponse> {
-    return tryCatchAsync(async () => {
-      const review = await ctx.prisma.review.findUnique({
-        where: { id: reviewId },
-        select: { product_id: true },
-      });
-
-      if (!review) {
-        return { success: false, error: "Review not found" };
-      }
-
-      await ctx.prisma.review.delete({
-        where: { id: reviewId },
-      });
-
-      return {
-        success: true,
-        error: null,
-      };
-    });
-  }
-
   @Mutation(() => AdminBulkDeleteProductsResponse)
   @adminRequired()
   async adminBulkDeleteProducts(

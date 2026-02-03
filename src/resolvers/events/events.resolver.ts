@@ -13,7 +13,6 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import { eventCache } from "./events.cache";
 import {
-  CancelRegistrationResponse,
   EventBase,
   EventDetail,
   EventLevel,
@@ -414,44 +413,6 @@ export class EventsResolver {
   }
 
   @Query(() => EventDetail, { nullable: true })
-  async eventBySlug(
-    @Ctx() ctx: Context,
-    @Arg("slug", () => String) slug: string,
-  ): Promise<EventDetail | null> {
-    return tryCatchAsync(async () => {
-      const userId = getUserIdOptional(ctx);
-
-      const event = await eventCache.getEventBySlug(slug);
-      if (!event) return null;
-
-      // Calculate avg rating from reviews
-      const avgRating =
-        event.reviews.length > 0
-          ? event.reviews.reduce((sum, r) => sum + r.rating, 0) /
-            event.reviews.length
-          : null;
-
-      const baseEvent = {
-        ...mapEventBase(event, avgRating),
-        reviews: event.reviews.map(mapReview),
-        is_registered: false,
-      };
-
-      // Check user registration (not cached, user-specific)
-      if (userId) {
-        const registration = await ctx.prisma.eventRegistration.findUnique({
-          where: {
-            event_id_user_id: { event_id: baseEvent.id, user_id: userId },
-          },
-        });
-        return { ...baseEvent, is_registered: !!registration };
-      }
-
-      return baseEvent;
-    });
-  }
-
-  @Query(() => EventDetail, { nullable: true })
   async eventById(
     @Ctx() ctx: Context,
     @Arg("id", () => String) id: string,
@@ -775,36 +736,6 @@ export class EventsResolver {
     });
   }
 
-  @Query(() => EventRegistration, { nullable: true })
-  @authRequired()
-  async registrationById(
-    @Ctx() ctx: Context,
-    @Arg("registrationId", () => String) registrationId: string,
-  ): Promise<EventRegistration | null> {
-    return tryCatchAsync(async () => {
-      const userId = getUserId(ctx);
-
-      const registration = await registrationCache.getRegistrationById(
-        userId,
-        registrationId,
-      );
-
-      if (!registration) {
-        return null;
-      }
-
-      // Check if user has reviewed this event (not cached, user-specific)
-      const review = await ctx.prisma.review.findFirst({
-        where: {
-          user_id: userId,
-          event_id: registration.event_id,
-        },
-      });
-
-      return mapRegistration(registration, !!review);
-    });
-  }
-
   @Query(() => RegistrationsResponse)
   @authRequired()
   async upcomingRegistrations(
@@ -975,61 +906,6 @@ export class EventsResolver {
       return {
         success: true,
         registration: mapRegistration(registration, false),
-        error: null,
-      };
-    });
-  }
-
-  @Mutation(() => CancelRegistrationResponse)
-  @authRequired()
-  async cancelRegistration(
-    @Ctx() ctx: Context,
-    @Arg("registrationId", () => String) registrationId: string,
-  ): Promise<CancelRegistrationResponse> {
-    return tryCatchAsync(async () => {
-      const userId = getUserId(ctx);
-
-      const registration = await ctx.prisma.eventRegistration.findFirst({
-        where: {
-          id: registrationId,
-          user_id: userId,
-        },
-        include: {
-          event: {
-            select: { slug: true },
-          },
-        },
-      });
-
-      if (!registration) {
-        return {
-          success: false,
-          error: "Registration not found",
-        };
-      }
-
-      await ctx.prisma.$transaction([
-        ctx.prisma.eventRegistration.delete({
-          where: { id: registrationId },
-        }),
-        ctx.prisma.event.update({
-          where: { id: registration.event_id },
-          data: {
-            available_seats: { increment: registration.seats_reserved },
-          },
-        }),
-      ]);
-
-      // Invalidate caches
-      await Promise.all([
-        registrationCache.invalidateUserRegistrationsList(userId),
-        eventCache.invalidateEventById(registration.event_id),
-        eventCache.invalidateEventBySlug(registration.event.slug),
-        eventCache.invalidateEventLists(),
-      ]);
-
-      return {
-        success: true,
         error: null,
       };
     });

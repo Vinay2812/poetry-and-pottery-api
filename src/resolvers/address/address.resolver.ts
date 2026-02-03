@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Ctx, Int, Mutation, Resolver } from "type-graphql";
 
 import { prisma } from "@/lib/prisma";
 import { authRequired } from "@/middlewares/auth.middleware";
@@ -8,10 +8,8 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
   AddressMutationResponse,
-  AddressesResponse,
   CreateAddressInput,
   UpdateAddressInput,
-  UserAddress,
 } from "./address.type";
 
 function getUserId(ctx: Context): number {
@@ -65,44 +63,6 @@ function validateAddressInput(
 
 @Resolver()
 export class AddressResolver {
-  @Query(() => AddressesResponse)
-  @authRequired()
-  async userAddresses(@Ctx() ctx: Context): Promise<AddressesResponse> {
-    return tryCatchAsync(async () => {
-      const userId = getUserId(ctx);
-
-      const addresses = await prisma.userAddress.findMany({
-        where: { user_id: userId },
-        orderBy: { id: "desc" },
-      });
-
-      return {
-        addresses,
-        total: addresses.length,
-      };
-    });
-  }
-
-  @Query(() => UserAddress, { nullable: true })
-  @authRequired()
-  async addressById(
-    @Ctx() ctx: Context,
-    @Arg("id", () => Int) id: number,
-  ): Promise<UserAddress | null> {
-    return tryCatchAsync(async () => {
-      const userId = getUserId(ctx);
-
-      const address = await prisma.userAddress.findFirst({
-        where: {
-          id,
-          user_id: userId,
-        },
-      });
-
-      return address;
-    });
-  }
-
   @Mutation(() => AddressMutationResponse)
   @authRequired()
   async createAddress(

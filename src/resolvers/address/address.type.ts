@@ -1,4 +1,3 @@
-import { GraphQLDateTime } from "graphql-scalars";
 import { Field, InputType, Int, ObjectType } from "type-graphql";
 
 @ObjectType()
@@ -32,15 +31,6 @@ export class UserAddress {
 
   @Field(() => String, { nullable: true })
   contact_number?: string | null;
-}
-
-@ObjectType()
-export class AddressesResponse {
-  @Field(() => [UserAddress])
-  addresses!: UserAddress[];
-
-  @Field(() => Int)
-  total!: number;
 }
 
 @InputType()

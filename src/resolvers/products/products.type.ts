@@ -104,15 +104,6 @@ export class ProductBase {
 }
 
 @ObjectType()
-export class CategoryWithImage {
-  @Field(() => String)
-  name!: string;
-
-  @Field(() => String, { nullable: true })
-  image_url?: string | null;
-}
-
-@ObjectType()
 export class ReviewUser {
   @Field(() => Int)
   id!: number;
@@ -224,15 +215,6 @@ export class ProductDetail {
 
   @Field(() => CollectionBase, { nullable: true })
   collection?: CollectionBase | null;
-}
-
-@ObjectType()
-export class ProductCategories {
-  @Field(() => Int)
-  id!: number;
-
-  @Field(() => String)
-  category!: string;
 }
 
 @InputType()
@@ -356,34 +338,4 @@ export class ProductsResponse {
 
   @Field(() => ProductsMeta)
   meta!: ProductsMeta;
-}
-
-@ObjectType()
-export class RecommendedProductsResponse {
-  @Field(() => [ProductBase])
-  products!: ProductBase[];
-
-  @Field(() => Int)
-  total!: number;
-
-  @Field(() => Int)
-  page!: number;
-
-  @Field(() => Int)
-  total_pages!: number;
-}
-
-@ObjectType()
-export class BestSellersResponse {
-  @Field(() => [ProductBase])
-  products!: ProductBase[];
-
-  @Field(() => Int)
-  total!: number;
-
-  @Field(() => Int)
-  page!: number;
-
-  @Field(() => Int)
-  total_pages!: number;
 }

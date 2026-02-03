@@ -448,15 +448,6 @@ export class RegisterForEventResponse {
   error?: string | null;
 }
 
-@ObjectType()
-export class CancelRegistrationResponse {
-  @Field(() => Boolean)
-  success!: boolean;
-
-  @Field(() => String, { nullable: true })
-  error?: string | null;
-}
-
 // Event with user context (for event detail page)
 @ObjectType()
 export class EventWithUserContext {

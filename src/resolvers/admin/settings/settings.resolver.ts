@@ -6,7 +6,6 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
   AdminSettingsMutationResponse,
-  AdminSiteSetting,
   ContactInfo,
   HeroImages,
   SocialLinks,
@@ -65,16 +64,6 @@ async function getSetting<T>(
 
 @Resolver()
 export class AdminSettingsResolver {
-  @Query(() => [AdminSiteSetting])
-  @adminRequired()
-  async adminAllSettings(@Ctx() ctx: Context): Promise<AdminSiteSetting[]> {
-    const settings = await ctx.prisma.siteSetting.findMany({
-      orderBy: { key: "asc" },
-    });
-
-    return settings;
-  }
-
   @Query(() => HeroImages)
   @adminRequired()
   async adminHeroImages(@Ctx() ctx: Context): Promise<HeroImages> {
@@ -169,15 +158,5 @@ export class AdminSettingsResolver {
   @Query(() => HeroImages)
   async publicHeroImages(@Ctx() ctx: Context): Promise<HeroImages> {
     return getSetting(ctx, SETTING_KEYS.HERO_IMAGES, DEFAULT_HERO_IMAGES);
-  }
-
-  @Query(() => ContactInfo)
-  async publicContactInfo(@Ctx() ctx: Context): Promise<ContactInfo> {
-    return getSetting(ctx, SETTING_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO);
-  }
-
-  @Query(() => SocialLinks)
-  async publicSocialLinks(@Ctx() ctx: Context): Promise<SocialLinks> {
-    return getSetting(ctx, SETTING_KEYS.SOCIAL_LINKS, DEFAULT_SOCIAL_LINKS);
   }
 }

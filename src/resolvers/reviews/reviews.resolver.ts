@@ -11,7 +11,6 @@ import {
   CreateEventReviewInput,
   CreateProductReviewInput,
   CreateReviewResponse,
-  DeleteReviewResponse,
   Review,
   ReviewsFilterInput,
   ReviewsResponse,
@@ -72,15 +71,6 @@ function mapReview(
 
 @Resolver()
 export class ReviewsResolver {
-  @Query(() => [Review])
-  async featuredReviews(
-    @Arg("limit", () => Int, { nullable: true, defaultValue: 10 })
-    limit: number,
-  ): Promise<Review[]> {
-    const reviews = await reviewCache.getFeaturedReviewsList(limit);
-    return reviews.map((review) => mapReview(review));
-  }
-
   @Query(() => ReviewsResponse)
   async productReviews(
     @Arg("productId", () => Int) productId: number,
@@ -293,54 +283,6 @@ export class ReviewsResolver {
     return {
       success: true,
       review: mapReview(review, userId),
-    };
-  }
-
-  @Mutation(() => DeleteReviewResponse)
-  @authRequired()
-  async deleteReview(
-    @Arg("reviewId", () => Int) reviewId: number,
-    @Ctx() ctx: Context,
-  ): Promise<DeleteReviewResponse> {
-    const userId = ctx.user!.dbUserId!;
-
-    // Find the review
-    const review = await prisma.review.findUnique({
-      where: { id: reviewId },
-    });
-
-    if (!review) {
-      return {
-        success: false,
-        error: "Review not found",
-      };
-    }
-
-    // Check if user owns the review
-    if (review.user_id !== userId) {
-      return {
-        success: false,
-        error: "You can only delete your own reviews",
-      };
-    }
-
-    await prisma.review.delete({
-      where: { id: reviewId },
-    });
-
-    if (review.product_id) {
-      await reviewCache.invalidateProductReviews(review.product_id);
-      // Invalidate product detail cache since avg_rating changed
-      await productCache.invalidateByProduct(review.product_id);
-    }
-    if (review.event_id) {
-      await reviewCache.invalidateEventReviews(review.event_id);
-      // Invalidate event detail cache since avg_rating changed
-      await eventCache.invalidateByEvent(review.event_id);
-    }
-
-    return {
-      success: true,
     };
   }
 

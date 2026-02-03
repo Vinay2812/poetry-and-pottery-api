@@ -42,11 +42,6 @@ type AddressMutationResponse {
   success: Boolean!
 }
 
-type AddressesResponse {
-  addresses: [UserAddress!]!
-  total: Int!
-}
-
 type AdminBulkDeleteEventsResponse {
   cancelledCount: Int!
   deletedCount: Int!
@@ -494,13 +489,6 @@ type AdminSettingsMutationResponse {
   success: Boolean!
 }
 
-type AdminSiteSetting {
-  id: Int!
-  key: String!
-  updated_at: DateTime!
-  value: JSON!
-}
-
 type AdminStatusOption {
   label: String!
   value: String!
@@ -670,13 +658,6 @@ input AssignProductsToCollectionInput {
   productIds: [Int!]!
 }
 
-type BestSellersResponse {
-  page: Int!
-  products: [ProductBase!]!
-  total: Int!
-  total_pages: Int!
-}
-
 type BulkDeleteEventResult {
   action: String!
   error: String
@@ -697,11 +678,6 @@ type BulkDeleteProductResult {
 
 input BulkDeleteProductsInput {
   ids: [Int!]!
-}
-
-type CancelRegistrationResponse {
-  error: String
-  success: Boolean!
 }
 
 type CarePageContent {
@@ -736,11 +712,6 @@ type CartResponse {
   items: [CartItem!]!
   subtotal: Int!
   total: Int!
-}
-
-type CategoryWithImage {
-  image_url: String
-  name: String!
 }
 
 type CollectionBase {
@@ -923,11 +894,6 @@ type DashboardStats {
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
-
-type DeleteReviewResponse {
-  error: String
-  success: Boolean!
-}
 
 type EventBase {
   available_seats: Int!
@@ -1174,9 +1140,7 @@ type Mutation {
   adminDeleteCollection(id: Int!): AdminCollectionMutationResponse!
   adminDeleteCustomizationOption(id: Int!): AdminCustomizationMutationResponse!
   adminDeleteEvent(id: String!): AdminEventMutationResponse!
-  adminDeleteEventReview(reviewId: Int!): AdminEventMutationResponse!
   adminDeleteProduct(id: Int!): AdminMutationResponse!
-  adminDeleteProductReview(reviewId: Int!): AdminMutationResponse!
   adminGetPresignedUploadUrl(input: GetPresignedUploadUrlInput!): PresignedUploadUrlResponse!
   adminRemoveProductFromCollection(productId: Int!): AdminCollectionMutationResponse!
   adminRenameCategory(newName: String!, oldName: String!): AdminCategoryMutationResponse!
@@ -1194,23 +1158,19 @@ type Mutation {
   adminUpdateOrderDiscount(discount: Float!, orderId: String!): AdminOrderMutationResponse!
   adminUpdateOrderItemDiscount(discount: Float!, itemId: Int!): AdminOrderMutationResponse!
   adminUpdateOrderItemQuantity(itemId: Int!, quantity: Int!): AdminOrderMutationResponse!
-  adminUpdateOrderPrice(orderId: String!, total: Float!): AdminOrderMutationResponse!
   adminUpdateOrderStatus(orderId: String!, status: String!): AdminOrderMutationResponse!
   adminUpdateProduct(id: Int!, input: UpdateProductInput!): AdminMutationResponse!
   adminUpdateRegistrationDetails(input: UpdateRegistrationDetailsInput!, registrationId: String!): AdminRegistrationMutationResponse!
-  adminUpdateRegistrationPrice(price: Float!, registrationId: String!): AdminRegistrationMutationResponse!
   adminUpdateRegistrationStatus(registrationId: String!, status: String!): AdminRegistrationMutationResponse!
   adminUpdateSocialLinks(input: UpdateSocialLinksInput!): AdminSettingsMutationResponse!
   adminUpdateUserRole(role: String!, userId: Int!): AdminUserMutationResponse!
   cancelOrder(orderId: String!): OrderMutationResponse!
-  cancelRegistration(registrationId: String!): CancelRegistrationResponse!
   clearCart: Boolean!
   createAddress(input: CreateAddressInput!): AddressMutationResponse!
   createEventReview(input: CreateEventReviewInput!): CreateReviewResponse!
   createOrder(input: CreateOrderInput!): OrderMutationResponse!
   createProductReview(input: CreateProductReviewInput!): CreateReviewResponse!
   deleteAddress(id: Int!): AddressMutationResponse!
-  deleteReview(reviewId: Int!): DeleteReviewResponse!
   moveToCart(productId: Int!): Boolean!
   registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
   removeFromCart(productId: Int!): Boolean!
@@ -1218,7 +1178,6 @@ type Mutation {
   subscribeToNewsletter: NewsletterMutationResponse!
   toggleReviewLike(reviewId: Int!): ToggleReviewLikeResponse!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
-  unsubscribeFromNewsletter: NewsletterMutationResponse!
   updateAddress(id: Int!, input: UpdateAddressInput!): AddressMutationResponse!
   updateCartQuantity(input: UpdateCartQuantityInput!): CartMutationResponse!
 }
@@ -1470,11 +1429,9 @@ type ProductsStats {
 }
 
 type Query {
-  addressById(id: Int!): UserAddress
   adminAllCategories: [String!]!
   adminAllCollections: [AdminProductCollection!]!
   adminAllConfiguredCategories: [AdminCategoryConfig!]!
-  adminAllSettings: [AdminSiteSetting!]!
   adminAvailableIcons: [AdminIconOption!]!
   adminCategories: AdminCategoriesResponse!
   adminCollectionById(id: Int!): AdminCollectionDetail
@@ -1510,46 +1467,35 @@ type Query {
   adminUserRegistrations(userId: Int!): [AdminUserRegistration!]!
   adminUserWishlist(limit: Int = 10, page: Int = 1, userId: Int!): AdminUserWishlistResponse!
   adminUsers(filter: AdminUsersFilterInput): AdminUsersResponse!
-  bestSellers(limit: Int, page: Int): BestSellersResponse!
   cart: CartResponse!
   categories: [String!]!
-  categoriesWithImages: [CategoryWithImage!]!
   collections(limit: Int, page: Int): [CollectionBase!]!
   completedRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   customizationCategories(filter: CustomizationCategoriesFilterInput): CustomizationCategoriesResponse!
   customizationOptionsByCategory(filter: CustomizationOptionsFilterInput!): CustomizationOptionsResponse!
   customizationTypes: [String!]!
   eventById(id: String!): EventDetail
-  eventBySlug(slug: String!): EventDetail
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
-  featuredReviews(limit: Int = 10): [Review!]!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
-  materials: [String!]!
   newsletterStatus: NewsletterStatus!
   order(id: String!): Order
   orders(filter: OrdersFilterInput): OrdersResponse!
   pastEvents(filter: EventsFilterInput): EventsResponse!
   productById(id: Int!): ProductDetail
-  productBySlug(slug: String!): ProductDetail
   productReviews(filter: ReviewsFilterInput, productId: Int!): ReviewsResponse!
   products(filter: ProductsFilterInput!): ProductsResponse!
   publicAboutContent: AboutPageContent
   publicCareContent: CarePageContent
-  publicContactInfo: ContactInfo!
   publicFAQContent: FAQPageContent
   publicHeroImages: HeroImages!
   publicPrivacyContent: PrivacyPageContent
   publicShippingContent: ShippingPageContent
-  publicSocialLinks: SocialLinks!
   publicTermsContent: TermsPageContent
-  recommendedProducts(limit: Int, page: Int, productId: Int): RecommendedProductsResponse!
-  registrationById(registrationId: String!): EventRegistration
   upcomingEvents(filter: EventsFilterInput): EventsResponse!
   upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
-  userAddresses: AddressesResponse!
   userCounts: UserCounts!
   userRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   wishlist(filter: WishlistFilterInput): WishlistResponse!
@@ -1586,13 +1532,6 @@ type RecentRegistrationEvent {
 type RecentRegistrationUser {
   email: String!
   name: String
-}
-
-type RecommendedProductsResponse {
-  page: Int!
-  products: [ProductBase!]!
-  total: Int!
-  total_pages: Int!
 }
 
 input RegisterForEventInput {
