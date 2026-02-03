@@ -31,20 +31,10 @@ export const logMiddleware = (
     if (!EXCLUDED_OPERATIONS.has(operation.resolver)) {
       logger.info(message, {
         ...operation,
-        responseTime: Date.now() - start,
+        responseTime: `${Date.now() - start} ms`,
         statusCode: res.statusCode,
         method: req.method,
         ip: req.ip,
-        headers: {
-          agent: req.headers["user-agent"],
-          referer: req.headers["referer"],
-          host: req.headers["host"],
-          accept: req.headers["accept"],
-          origin: req.headers["origin"],
-          contentType: req.headers["content-type"],
-          contentLength: req.headers["content-length"],
-        },
-        ...(req.body ? { body: req.body } : {}),
       });
     }
   });

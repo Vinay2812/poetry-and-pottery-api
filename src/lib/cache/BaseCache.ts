@@ -33,16 +33,24 @@ export abstract class BaseCache {
   ): Promise<T> {
     if (!redis) return factory();
 
+    const startTime = Date.now();
+
     try {
       const cached = await redis.get(key);
       if (cached) {
-        logger.debug(`[${this.domain}] Cache HIT: ${key}`);
+        logger.info(`[${this.domain}] Cache HIT: ${key}`);
+        logger.info(
+          `[${this.domain}] Cache HIT time: ${Date.now() - startTime}ms`,
+        );
         return JSON.parse(cached) as T;
       }
 
-      logger.debug(`[${this.domain}] Cache MISS: ${key}`);
+      logger.info(`[${this.domain}] Cache MISS: ${key}`);
       const result = await factory();
       await redis.setex(key, ttl, JSON.stringify(result));
+      logger.info(
+        `[${this.domain}] Cache MISS time: ${Date.now() - startTime}ms`,
+      );
       return result;
     } catch (error) {
       logger.error(`[${this.domain}] Cache error for ${key}:`, error);
@@ -56,7 +64,7 @@ export abstract class BaseCache {
 
     try {
       await redis.del(key);
-      logger.debug(`[${this.domain}] Cache DELETE: ${key}`);
+      logger.info(`[${this.domain}] Cache DELETE: ${key}`);
     } catch (error) {
       logger.error(`[${this.domain}] Cache delete error for ${key}:`, error);
     }
@@ -68,7 +76,7 @@ export abstract class BaseCache {
 
     try {
       await redis.del(...keys);
-      logger.debug(`[${this.domain}] Cache DELETE MANY: ${keys.length} keys`);
+      logger.info(`[${this.domain}] Cache DELETE MANY: ${keys.length} keys`);
     } catch (error) {
       logger.error(`[${this.domain}] Cache delete many error:`, error);
     }
@@ -132,7 +140,7 @@ export abstract class BaseCache {
       } while (cursor !== "0");
 
       if (deletedCount > 0) {
-        logger.debug(
+        logger.info(
           `[${this.domain}] Pattern invalidated (${patternToInvalidate}): ${deletedCount} keys`,
         );
       }
