@@ -203,27 +203,6 @@ export class ProductsResolver {
         ...collectionFilter,
       };
 
-      const orderBy: Prisma.ProductOrderByWithRelationInput[] = [
-        getOrderBy(filter.order_by),
-        { id: "desc" },
-      ];
-
-      const [products, totalProducts] = await Promise.all([
-        ctx.prisma.product.findMany({
-          where,
-          include: {
-            reviews: { select: { rating: true } },
-            collection: {
-              include: { _count: { select: { products: true } } },
-            },
-          },
-          orderBy,
-          skip: offset,
-          take: limit,
-        }),
-        ctx.prisma.product.count({ where }),
-      ]);
-
       // Build where clause for price stats (respects other filters but not price filter)
       const priceStatsWhere = {
         ...(filter.search && {
@@ -247,27 +226,51 @@ export class ProductsResolver {
         }),
       };
 
-      const [categoriesResult, materialsResult, priceStats, collectionsResult] =
-        await Promise.all([
-          ctx.prisma.productCategory.findMany({
-            where: { product: { is_active: true } },
-            distinct: ["category"],
-            select: { category: true },
-          }),
-          ctx.prisma.product.findMany({
-            where: { is_active: true },
-            distinct: ["material"],
-            select: { material: true },
-          }),
-          ctx.prisma.product.findMany({
-            where: priceStatsWhere,
-            select: { price: true },
-          }),
-          ctx.prisma.collection.findMany({
-            orderBy: { name: "asc" },
-            include: { _count: { select: { products: true } } },
-          }),
-        ]);
+      const orderBy: Prisma.ProductOrderByWithRelationInput[] = [
+        getOrderBy(filter.order_by),
+        { id: "desc" },
+      ];
+
+      const [
+        products,
+        totalProducts,
+        categoriesResult,
+        materialsResult,
+        priceStats,
+        collectionsResult,
+      ] = await Promise.all([
+        ctx.prisma.product.findMany({
+          where,
+          include: {
+            reviews: { select: { rating: true } },
+            collection: {
+              include: { _count: { select: { products: true } } },
+            },
+          },
+          orderBy,
+          skip: offset,
+          take: limit,
+        }),
+        ctx.prisma.product.count({ where }),
+        ctx.prisma.productCategory.findMany({
+          where: { product: { is_active: true } },
+          distinct: ["category"],
+          select: { category: true },
+        }),
+        ctx.prisma.product.findMany({
+          where: { is_active: true },
+          distinct: ["material"],
+          select: { material: true },
+        }),
+        ctx.prisma.product.findMany({
+          where: priceStatsWhere,
+          select: { price: true },
+        }),
+        ctx.prisma.collection.findMany({
+          orderBy: { name: "asc" },
+          include: { _count: { select: { products: true } } },
+        }),
+      ]);
 
       const totalPages = Math.ceil(totalProducts / limit);
 
