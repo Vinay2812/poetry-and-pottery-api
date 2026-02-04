@@ -29,6 +29,10 @@ export const R2_SECRET_ACCESS_KEY = process.env["R2_SECRET_ACCESS_KEY"];
 export const R2_BUCKET = process.env["R2_BUCKET"];
 export const R2_PUBLIC_URL = process.env["R2_PUBLIC_URL"];
 
+// Local-only admin bypass (for agent-browser/dev tooling)
+export const LOCAL_ADMIN_BYPASS_SECRET =
+  process.env["LOCAL_ADMIN_BYPASS_SECRET"];
+
 // Redis
 export const REDIS_URL = process.env["REDIS_URL"];
 export const REDIS_HOST = process.env["REDIS_HOST"];

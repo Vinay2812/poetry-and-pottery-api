@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { GraphQLError } from "graphql";
 import { createMethodMiddlewareDecorator } from "type-graphql";
 
+import { ENV, LOCAL_ADMIN_BYPASS_SECRET } from "@/consts/env";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
@@ -80,10 +81,6 @@ export const authMiddleWare = async (
   const { isAuthenticated, sessionClaims, userId } = getAuth(req);
   const { dbUserId, role } = sessionClaims || {};
 
-  if (requiredAuth && !isAuthenticated) {
-    throw new GraphQLError("User is not authenticated");
-  }
-
   if (isAuthenticated) {
     if (!dbUserId) {
       const clerkUser = await clerkClient.users.getUser(userId);
@@ -141,10 +138,64 @@ export const authMiddleWare = async (
         role: role ?? UserRole.USER,
       };
     }
+  } else if (isLocalAdminBypassAllowed(req)) {
+    context.user = {
+      dbUserId: 1,
+      role: UserRole.ADMIN,
+      environment: "local",
+    };
+  } else if (requiredAuth) {
+    throw new GraphQLError("User is not authenticated");
   }
 
   return context;
 };
+
+const LOCAL_ADMIN_BYPASS_HEADER = "x-local-admin-secret";
+
+function isLocalAdminBypassAllowed(req: Request): boolean {
+  // if (ENV === "production") {
+  //   return false;
+  // }
+
+  // if (!LOCAL_ADMIN_BYPASS_SECRET) {
+  //   return false;
+  // }
+
+  // const headerValue = req.headers[LOCAL_ADMIN_BYPASS_HEADER];
+  // const secret = Array.isArray(headerValue)
+  //   ? headerValue[0]
+  //   : headerValue?.toString();
+
+  // if (!secret || secret !== LOCAL_ADMIN_BYPASS_SECRET) {
+  //   return false;
+  // }
+
+  // return isLocalRequest(req);
+  return false;
+}
+
+function isLocalRequest(req: Request): boolean {
+  const host = req.headers.host?.split(":")[0];
+  const hostname = req.hostname;
+  const ip = req.ip;
+  const remoteAddress = req.socket?.remoteAddress;
+
+  return [host, hostname, ip, remoteAddress].some(isLocalHostValue);
+}
+
+function isLocalHostValue(value?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return (
+    value === "localhost" ||
+    value === "127.0.0.1" ||
+    value === "::1" ||
+    value === "::ffff:127.0.0.1"
+  );
+}
 
 export function authRequired(
   errorMessage: string = "User is not authenticated",
