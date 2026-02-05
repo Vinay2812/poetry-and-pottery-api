@@ -119,7 +119,7 @@ export const authMiddleWare = async (
         });
 
         await clerkClient.users.updateUserMetadata(userId, {
-          privateMetadata: {
+          publicMetadata: {
             dbUserId: user.id,
             role: user.role,
           },
