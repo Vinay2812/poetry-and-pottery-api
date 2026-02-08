@@ -10,6 +10,7 @@ import { clerkClient, getAuth } from "@clerk/express";
 
 const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
   "Products",
+  "SitemapProducts",
   "ProductBySlug",
   "ProductById",
   "RelatedProducts",
@@ -25,6 +26,7 @@ const PRODUCT_NON_AUTH_RESOLVERS: string[] = [
 
 const EVENT_NON_AUTH_RESOLVERS: string[] = [
   "Events",
+  "SitemapEvents",
   "EventBySlug",
   "EventById",
   "UpcomingEvents",

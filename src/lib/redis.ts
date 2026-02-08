@@ -80,5 +80,3 @@ class RedisClient {
 const redisClient = new RedisClient();
 
 export const redis = redisClient.getClient();
-export const isRedisReady = () => redisClient.isReady();
-export const closeRedis = () => redisClient.close();

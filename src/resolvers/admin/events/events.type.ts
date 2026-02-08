@@ -498,15 +498,6 @@ export class AdminLevelOption {
   label!: string;
 }
 
-@ObjectType()
-export class AdminEventTypeOption {
-  @Field(() => String)
-  value!: string;
-
-  @Field(() => String)
-  label!: string;
-}
-
 @InputType()
 export class BulkDeleteEventsInput {
   @Field(() => [String])

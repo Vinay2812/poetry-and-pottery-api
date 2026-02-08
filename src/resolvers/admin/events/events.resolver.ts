@@ -18,7 +18,6 @@ import {
   AdminEventMutationResponse,
   AdminEventRegistrationsResponse,
   AdminEventReviewsResponse,
-  AdminEventTypeOption,
   AdminEventsFilterInput,
   AdminEventsResponse,
   AdminLevelOption,
@@ -306,15 +305,6 @@ export class AdminEventsResolver {
       { value: EventLevel.BEGINNER, label: "Beginner" },
       { value: EventLevel.INTERMEDIATE, label: "Intermediate" },
       { value: EventLevel.ADVANCED, label: "Advanced" },
-    ];
-  }
-
-  @Query(() => [AdminEventTypeOption])
-  @adminRequired()
-  async adminEventTypeOptions(): Promise<AdminEventTypeOption[]> {
-    return [
-      { value: EventType.POTTERY_WORKSHOP, label: "Pottery Workshop" },
-      { value: EventType.OPEN_MIC, label: "Open Mic" },
     ];
   }
 

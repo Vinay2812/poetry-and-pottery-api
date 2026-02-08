@@ -6,21 +6,10 @@ import {
   R2_SECRET_ACCESS_KEY,
 } from "@/consts/env";
 import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-export interface FileObject {
-  Key?: string;
-  LastModified?: Date;
-  ETag?: string;
-  Size?: number;
-  StorageClass?: string;
-}
 
 let s3Client: S3Client | null = null;
 
@@ -48,22 +37,6 @@ function getS3Client(): S3Client {
   return s3Client;
 }
 
-export async function uploadFile(
-  file: Buffer,
-  key: string,
-  contentType?: string,
-) {
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-    Body: file,
-    ContentType: contentType,
-  });
-
-  const response = await getS3Client().send(command);
-  return response;
-}
-
 export async function getSignedUrlForUpload(
   key: string,
   contentType: string,
@@ -77,39 +50,6 @@ export async function getSignedUrlForUpload(
 
   const signedUrl = await getSignedUrl(getS3Client(), command, { expiresIn });
   return signedUrl;
-}
-
-export async function getSignedUrlForDownload(
-  key: string,
-  expiresIn = 3600,
-): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-  });
-
-  const signedUrl = await getSignedUrl(getS3Client(), command, { expiresIn });
-  return signedUrl;
-}
-
-export async function listFiles(prefix = ""): Promise<FileObject[]> {
-  const command = new ListObjectsV2Command({
-    Bucket: R2_BUCKET,
-    Prefix: prefix,
-  });
-
-  const response = await getS3Client().send(command);
-  return response.Contents || [];
-}
-
-export async function deleteFile(key: string) {
-  const command = new DeleteObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-  });
-
-  const response = await getS3Client().send(command);
-  return response;
 }
 
 export function generateUniqueKey(filename: string, folder?: string): string {

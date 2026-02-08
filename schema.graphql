@@ -458,11 +458,6 @@ type AdminEventReviewsResponse {
   total: Int!
 }
 
-type AdminEventTypeOption {
-  label: String!
-  value: String!
-}
-
 input AdminEventsFilterInput {
   endDate: DateTime
   event_type: EventType
@@ -1843,7 +1838,6 @@ type Query {
   adminEventRegistrations(eventId: String!): AdminEventRegistrationsResponse!
   adminEventReviews(eventId: String!): AdminEventReviewsResponse!
   adminEventStatusOptions: [AdminStatusOption!]!
-  adminEventTypeOptions: [AdminEventTypeOption!]!
   adminEvents(filter: AdminEventsFilterInput): AdminEventsResponse!
   adminHeroImages: HeroImages!
   adminLowStockProducts(limit: Int = 10): [LowStockProduct!]!
