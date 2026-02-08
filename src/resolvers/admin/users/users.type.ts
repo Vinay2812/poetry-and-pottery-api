@@ -2,6 +2,7 @@ import { GraphQLDateTime, GraphQLJSON } from "graphql-scalars";
 import { Field, Float, InputType, Int, ObjectType } from "type-graphql";
 
 import { UserRole } from "@/prisma/generated/client";
+import { DailyWorkshopRegistrationStatus } from "@/resolvers/daily-workshops/daily-workshops.type";
 
 // Note: UserRole enum is registered in src/resolvers/user/user.type.ts
 // Do not register it again here
@@ -13,6 +14,9 @@ export class AdminUserCount {
 
   @Field(() => Int)
   event_registrations!: number;
+
+  @Field(() => Int)
+  daily_workshop_registrations!: number;
 }
 
 @ObjectType()
@@ -58,6 +62,9 @@ export class AdminUserDetailCount {
 
   @Field(() => Int)
   event_registrations!: number;
+
+  @Field(() => Int)
+  daily_workshop_registrations!: number;
 
   @Field(() => Int)
   wishlists!: number;
@@ -297,6 +304,87 @@ export class AdminUserRegistration {
 
   @Field(() => AdminUserRegistrationEvent)
   event!: AdminUserRegistrationEvent;
+}
+
+@ObjectType()
+export class AdminUserDailyWorkshopRegistrationSlot {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => GraphQLDateTime)
+  slot_start_at!: Date;
+
+  @Field(() => GraphQLDateTime)
+  slot_end_at!: Date;
+}
+
+@ObjectType()
+export class AdminUserDailyWorkshopRegistration {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => DailyWorkshopRegistrationStatus)
+  status!: DailyWorkshopRegistrationStatus;
+
+  @Field(() => Int)
+  participants!: number;
+
+  @Field(() => Int)
+  total_hours!: number;
+
+  @Field(() => Int)
+  slots_count!: number;
+
+  @Field(() => Float)
+  price_per_person!: number;
+
+  @Field(() => Float)
+  pieces_per_person!: number;
+
+  @Field(() => Float)
+  base_amount!: number;
+
+  @Field(() => Float)
+  discount!: number;
+
+  @Field(() => Float)
+  final_amount!: number;
+
+  @Field(() => Float)
+  total_pieces!: number;
+
+  @Field(() => String)
+  currency!: string;
+
+  @Field(() => GraphQLJSON)
+  pricing_snapshot!: object;
+
+  @Field(() => GraphQLDateTime)
+  created_at!: Date;
+
+  @Field(() => GraphQLDateTime)
+  updated_at!: Date;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  request_at?: Date | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  approved_at?: Date | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  paid_at?: Date | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  confirmed_at?: Date | null;
+
+  @Field(() => GraphQLDateTime, { nullable: true })
+  cancelled_at?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  cancelled_reason?: string | null;
+
+  @Field(() => [AdminUserDailyWorkshopRegistrationSlot])
+  slots!: AdminUserDailyWorkshopRegistrationSlot[];
 }
 
 // User Cart types

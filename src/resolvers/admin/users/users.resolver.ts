@@ -5,6 +5,7 @@ import {
   EventRegistrationStatus,
   OrderStatus,
   Prisma,
+  DailyWorkshopRegistrationStatus as PrismaDailyWorkshopRegistrationStatus,
   UserRole,
 } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
@@ -12,6 +13,7 @@ import { tryCatchAsync } from "@/utils/trycatch";
 
 import {
   AdminUserCartItem,
+  AdminUserDailyWorkshopRegistration,
   AdminUserDetail,
   AdminUserMutationResponse,
   AdminUserOrder,
@@ -75,6 +77,7 @@ export class AdminUsersResolver {
             select: {
               product_orders: true,
               event_registrations: true,
+              daily_workshop_registrations: true,
             },
           },
           product_orders: {
@@ -101,6 +104,17 @@ export class AdminUsersResolver {
             },
             select: { id: true },
           },
+          daily_workshop_registrations: {
+            where: {
+              status: {
+                in: [
+                  PrismaDailyWorkshopRegistrationStatus.PENDING,
+                  PrismaDailyWorkshopRegistrationStatus.APPROVED,
+                ],
+              },
+            },
+            select: { id: true },
+          },
         },
       }),
       ctx.prisma.user.count({ where }),
@@ -117,7 +131,9 @@ export class AdminUsersResolver {
       created_at: user.created_at,
       _count: user._count,
       pendingOrdersCount: user.product_orders.length,
-      pendingRegistrationsCount: user.event_registrations.length,
+      pendingRegistrationsCount:
+        user.event_registrations.length +
+        user.daily_workshop_registrations.length,
     }));
 
     return {
@@ -151,6 +167,7 @@ export class AdminUsersResolver {
           select: {
             product_orders: true,
             event_registrations: true,
+            daily_workshop_registrations: true,
             wishlists: true,
             carts: true,
             reviews: true,
@@ -246,6 +263,51 @@ export class AdminUsersResolver {
     });
 
     return registrations;
+  }
+
+  @Query(() => [AdminUserDailyWorkshopRegistration])
+  @adminRequired()
+  async adminUserDailyWorkshopRegistrations(
+    @Ctx() ctx: Context,
+    @Arg("userId", () => Int) userId: number,
+  ): Promise<AdminUserDailyWorkshopRegistration[]> {
+    const registrations = await ctx.prisma.dailyWorkshopRegistration.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        status: true,
+        participants: true,
+        total_hours: true,
+        slots_count: true,
+        price_per_person: true,
+        pieces_per_person: true,
+        base_amount: true,
+        discount: true,
+        final_amount: true,
+        total_pieces: true,
+        currency: true,
+        pricing_snapshot: true,
+        created_at: true,
+        updated_at: true,
+        request_at: true,
+        approved_at: true,
+        paid_at: true,
+        confirmed_at: true,
+        cancelled_at: true,
+        cancelled_reason: true,
+        slots: {
+          orderBy: { slot_start_at: "asc" },
+          select: {
+            id: true,
+            slot_start_at: true,
+            slot_end_at: true,
+          },
+        },
+      },
+    });
+
+    return registrations as AdminUserDailyWorkshopRegistration[];
   }
 
   @Query(() => [AdminUserCartItem])

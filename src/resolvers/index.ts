@@ -9,6 +9,7 @@ export * from "./address/address.resolver";
 export * from "./newsletter/newsletter.resolver";
 export * from "./search/search.resolver";
 export * from "./customization/customization.resolver";
+export * from "./daily-workshops/daily-workshops.resolver";
 
 // Admin resolvers
 export * from "./admin/analytics/analytics.resolver";
@@ -24,3 +25,4 @@ export * from "./admin/settings/settings.resolver";
 export * from "./admin/uploads/uploads.resolver";
 export * from "./admin/customization/customization.resolver";
 export * from "./admin/customization/customize-category.resolver";
+export * from "./admin/daily-workshops/daily-workshops.resolver";

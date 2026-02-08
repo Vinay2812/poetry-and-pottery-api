@@ -234,6 +234,127 @@ type AdminCustomizeCategoryMutationResponse {
   success: Boolean!
 }
 
+type AdminDailyWorkshopBlackoutRule {
+  auto_cancel_existing: Boolean!
+  config_id: Int!
+  created_at: DateTime!
+  created_by_user_id: Int
+  id: String!
+  is_active: Boolean!
+  month_days: [Int!]!
+  name: String!
+  one_time_end_at: DateTime
+  one_time_start_at: DateTime
+  range_end_minutes: Int!
+  range_start_minutes: Int!
+  reason: String
+  recurrence_end_date: DateTime
+  recurrence_start_date: DateTime
+  timezone: String!
+  type: DailyWorkshopBlackoutType!
+  updated_at: DateTime!
+  weekdays: [Int!]!
+}
+
+type AdminDailyWorkshopBlackoutRuleMutationResponse {
+  error: String
+  rule: AdminDailyWorkshopBlackoutRule
+  success: Boolean!
+}
+
+type AdminDailyWorkshopConfig {
+  auto_cancel_on_blackout: Boolean!
+  booking_window_days: Int!
+  closing_hour: Int!
+  created_at: DateTime!
+  description: String
+  id: Int!
+  is_active: Boolean!
+  key: String!
+  name: String!
+  opening_hour: Int!
+  slot_capacity: Int!
+  slot_duration_minutes: Int!
+  timezone: String!
+  updated_at: DateTime!
+}
+
+type AdminDailyWorkshopConfigMutationResponse {
+  config: AdminDailyWorkshopConfig
+  error: String
+  success: Boolean!
+}
+
+type AdminDailyWorkshopMutationResponse {
+  error: String
+  success: Boolean!
+}
+
+type AdminDailyWorkshopPricingTier {
+  config_id: Int!
+  created_at: DateTime!
+  hours: Int!
+  id: Int!
+  is_active: Boolean!
+  pieces_per_person: Int!
+  price_per_person: Int!
+  sort_order: Int!
+  updated_at: DateTime!
+}
+
+type AdminDailyWorkshopPricingTierMutationResponse {
+  error: String
+  success: Boolean!
+  tier: AdminDailyWorkshopPricingTier
+}
+
+type AdminDailyWorkshopRegistration {
+  approved_at: DateTime
+  base_amount: Int!
+  cancelled_at: DateTime
+  cancelled_reason: String
+  config_id: Int!
+  confirmed_at: DateTime
+  created_at: DateTime!
+  currency: String!
+  discount: Int!
+  final_amount: Int!
+  id: String!
+  paid_at: DateTime
+  participants: Int!
+  pieces_per_person: Int!
+  price_per_person: Int!
+  pricing_snapshot: JSON!
+  request_at: DateTime
+  slots: [AdminDailyWorkshopRegistrationSlot!]!
+  slots_count: Int!
+  status: DailyWorkshopRegistrationStatus!
+  total_hours: Int!
+  total_pieces: Int!
+  updated_at: DateTime!
+  user: AdminDailyWorkshopUser!
+  user_id: Int!
+}
+
+type AdminDailyWorkshopRegistrationMutationResponse {
+  error: String
+  registration: AdminDailyWorkshopRegistration
+  success: Boolean!
+}
+
+type AdminDailyWorkshopRegistrationSlot {
+  id: Int!
+  slot_end_at: DateTime!
+  slot_start_at: DateTime!
+}
+
+type AdminDailyWorkshopUser {
+  email: String!
+  id: Int!
+  image: String
+  name: String
+}
+
 type AdminEvent {
   _count: AdminEventCount!
   available_seats: Int!
@@ -520,6 +641,54 @@ type AdminStatusOption {
   value: String!
 }
 
+input AdminUpdateDailyWorkshopConfigInput {
+  auto_cancel_on_blackout: Boolean
+  booking_window_days: Int
+  closing_hour: Int
+  description: String
+  is_active: Boolean
+  name: String
+  opening_hour: Int
+  slot_capacity: Int
+  slot_duration_minutes: Int
+  timezone: String
+}
+
+input AdminUpdateDailyWorkshopRegistrationInput {
+  discount: Int
+  participants: Int
+  pieces_per_person: Int
+  price_per_person: Int
+  slot_start_times: [DateTime!]
+}
+
+input AdminUpsertDailyWorkshopBlackoutRuleInput {
+  auto_cancel_existing: Boolean = true
+  id: String
+  is_active: Boolean = true
+  month_days: [Int!] = []
+  name: String!
+  one_time_end_at: DateTime
+  one_time_start_at: DateTime
+  range_end_minutes: Int!
+  range_start_minutes: Int!
+  reason: String
+  recurrence_end_date: DateTime
+  recurrence_start_date: DateTime
+  timezone: String
+  type: DailyWorkshopBlackoutType!
+  weekdays: [Int!] = []
+}
+
+input AdminUpsertDailyWorkshopPricingTierInput {
+  hours: Int!
+  id: Int
+  is_active: Boolean = true
+  pieces_per_person: Int!
+  price_per_person: Int!
+  sort_order: Int = 0
+}
+
 type AdminUser {
   _count: AdminUserCount!
   auth_id: String!
@@ -551,6 +720,7 @@ type AdminUserCartProduct {
 }
 
 type AdminUserCount {
+  daily_workshop_registrations: Int!
   event_registrations: Int!
   product_orders: Int!
 }
@@ -570,6 +740,7 @@ type AdminUserDetail {
 
 type AdminUserDetailCount {
   carts: Int!
+  daily_workshop_registrations: Int!
   event_registrations: Int!
   product_orders: Int!
   reviews: Int!
@@ -804,6 +975,19 @@ input CreateCustomizeCategoryInput {
   is_active: Boolean = true
 }
 
+input CreateDailyWorkshopRegistrationInput {
+  config_id: Int
+  discount: Int = 0
+  participants: Int = 1
+  slot_start_times: [DateTime!]!
+}
+
+type CreateDailyWorkshopRegistrationResponse {
+  error: String
+  registration: DailyWorkshopRegistration
+  success: Boolean!
+}
+
 input CreateEventInput {
   available_seats: Int!
   description: String!
@@ -929,6 +1113,126 @@ type CustomizationOptionsResponse {
   customize_category_id: Int!
   options_by_type: [CustomizationOptionsByType!]!
   total_options: Int!
+}
+
+type DailyWorkshopAvailabilityDay {
+  date_key: String!
+  label: String!
+  slots: [DailyWorkshopSlotAvailability!]!
+}
+
+input DailyWorkshopAvailabilityInput {
+  config_id: Int
+  days: Int = 7
+  start_date: DateTime
+}
+
+type DailyWorkshopAvailabilityResponse {
+  config: DailyWorkshopConfig!
+  days: [DailyWorkshopAvailabilityDay!]!
+}
+
+"""Blackout recurrence type for daily workshop slots"""
+enum DailyWorkshopBlackoutType {
+  DAILY
+  MONTHLY
+  ONE_TIME
+  WEEKLY
+}
+
+type DailyWorkshopConfig {
+  auto_cancel_on_blackout: Boolean!
+  booking_window_days: Int!
+  closing_hour: Int!
+  description: String
+  id: Int!
+  is_active: Boolean!
+  key: String!
+  name: String!
+  opening_hour: Int!
+  pricing_tiers: [DailyWorkshopPricingTier!]!
+  slot_capacity: Int!
+  slot_duration_minutes: Int!
+  timezone: String!
+}
+
+type DailyWorkshopPricingTier {
+  config_id: Int!
+  hours: Int!
+  id: Int!
+  is_active: Boolean!
+  pieces_per_person: Int!
+  price_per_person: Int!
+  sort_order: Int!
+}
+
+type DailyWorkshopRegistration {
+  approved_at: DateTime
+  base_amount: Int!
+  cancelled_at: DateTime
+  cancelled_by_blackout_rule_id: String
+  cancelled_by_user_id: Int
+  cancelled_reason: String
+  config_id: Int!
+  confirmed_at: DateTime
+  created_at: DateTime!
+  currency: String!
+  discount: Int!
+  final_amount: Int!
+  id: String!
+  paid_at: DateTime
+  participants: Int!
+  pieces_per_person: Int!
+  price_per_person: Int!
+  pricing_snapshot: JSON!
+  request_at: DateTime
+  slots: [DailyWorkshopRegistrationSlot!]!
+  slots_count: Int!
+  status: DailyWorkshopRegistrationStatus!
+  total_hours: Int!
+  total_pieces: Int!
+  updated_at: DateTime!
+  user_id: Int!
+}
+
+type DailyWorkshopRegistrationSlot {
+  id: Int!
+  registration_id: String!
+  slot_end_at: DateTime!
+  slot_start_at: DateTime!
+}
+
+"""Status of a daily workshop registration"""
+enum DailyWorkshopRegistrationStatus {
+  APPROVED
+  CANCELLED
+  CONFIRMED
+  PAID
+  PENDING
+  REJECTED
+}
+
+input DailyWorkshopRegistrationsFilterInput {
+  limit: Int = 12
+  page: Int = 1
+  search: String
+  status: DailyWorkshopRegistrationStatus
+}
+
+type DailyWorkshopRegistrationsResponse {
+  data: [DailyWorkshopRegistration!]!
+  page: Int!
+  total: Int!
+  total_pages: Int!
+}
+
+type DailyWorkshopSlotAvailability {
+  is_available: Boolean!
+  reason: String
+  remaining_capacity: Int!
+  reserved_participants: Int!
+  slot_end_at: DateTime!
+  slot_start_at: DateTime!
 }
 
 type DashboardStats {
@@ -1198,12 +1502,16 @@ type Mutation {
   adminCreateCollection(input: CreateCollectionInput!): AdminCollectionMutationResponse!
   adminCreateCustomizationOption(input: CreateCustomizationOptionInput!): AdminCustomizationMutationResponse!
   adminCreateCustomizeCategory(input: CreateCustomizeCategoryInput!): AdminCustomizeCategoryMutationResponse!
+  adminCreateDailyWorkshopConfig: AdminDailyWorkshopConfigMutationResponse!
   adminCreateEvent(input: CreateEventInput!): AdminEventMutationResponse!
   adminCreateProduct(input: CreateProductInput!): AdminProductMutationResponse!
   adminDeleteCategory(name: String!): AdminCategoryMutationResponse!
   adminDeleteCollection(id: Int!): AdminCollectionMutationResponse!
   adminDeleteCustomizationOption(id: Int!): AdminCustomizationMutationResponse!
   adminDeleteCustomizeCategory(id: Int!): AdminCustomizeCategoryMutationResponse!
+  adminDeleteDailyWorkshopBlackoutRule(id: String!): AdminDailyWorkshopMutationResponse!
+  adminDeleteDailyWorkshopConfig(id: Int!): AdminDailyWorkshopMutationResponse!
+  adminDeleteDailyWorkshopPricingTier(id: Int!): AdminDailyWorkshopMutationResponse!
   adminDeleteEvent(id: String!): AdminEventMutationResponse!
   adminDeleteProduct(id: Int!): AdminMutationResponse!
   adminGetPresignedUploadUrl(input: GetPresignedUploadUrlInput!): PresignedUploadUrlResponse!
@@ -1219,6 +1527,9 @@ type Mutation {
   adminUpdateContentPage(input: UpdateContentPageInput!, slug: String!): AdminContentMutationResponse!
   adminUpdateCustomizationOption(id: Int!, input: UpdateCustomizationOptionInput!): AdminCustomizationMutationResponse!
   adminUpdateCustomizeCategory(id: Int!, input: UpdateCustomizeCategoryInput!): AdminCustomizeCategoryMutationResponse!
+  adminUpdateDailyWorkshopConfig(configId: Int, input: AdminUpdateDailyWorkshopConfigInput!): AdminDailyWorkshopConfigMutationResponse!
+  adminUpdateDailyWorkshopRegistrationDetails(input: AdminUpdateDailyWorkshopRegistrationInput!, registrationId: String!): AdminDailyWorkshopRegistrationMutationResponse!
+  adminUpdateDailyWorkshopRegistrationStatus(registrationId: String!, status: String!): AdminDailyWorkshopMutationResponse!
   adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
   adminUpdateEventStatus(id: String!, status: String!): AdminEventMutationResponse!
   adminUpdateHeroImages(input: UpdateHeroImagesInput!): AdminSettingsMutationResponse!
@@ -1231,6 +1542,8 @@ type Mutation {
   adminUpdateRegistrationStatus(registrationId: String!, status: String!): AdminRegistrationMutationResponse!
   adminUpdateSocialLinks(input: UpdateSocialLinksInput!): AdminSettingsMutationResponse!
   adminUpdateUserRole(role: String!, userId: Int!): AdminUserMutationResponse!
+  adminUpsertDailyWorkshopBlackoutRule(configId: Int, input: AdminUpsertDailyWorkshopBlackoutRuleInput!): AdminDailyWorkshopBlackoutRuleMutationResponse!
+  adminUpsertDailyWorkshopPricingTier(configId: Int, input: AdminUpsertDailyWorkshopPricingTierInput!): AdminDailyWorkshopPricingTierMutationResponse!
   cancelOrder(orderId: String!): OrderMutationResponse!
   clearCart: Boolean!
   createAddress(input: CreateAddressInput!): AddressMutationResponse!
@@ -1239,9 +1552,11 @@ type Mutation {
   createProductReview(input: CreateProductReviewInput!): CreateReviewResponse!
   deleteAddress(id: Int!): AddressMutationResponse!
   moveToCart(productId: Int!): Boolean!
+  registerForDailyWorkshop(input: CreateDailyWorkshopRegistrationInput!): CreateDailyWorkshopRegistrationResponse!
   registerForEvent(input: RegisterForEventInput!): RegisterForEventResponse!
   removeFromCart(customDataHash: String = "", productId: Int!): Boolean!
   removeFromWishlist(productId: Int!): Boolean!
+  rescheduleDailyWorkshopRegistration(input: RescheduleDailyWorkshopRegistrationInput!): CreateDailyWorkshopRegistrationResponse!
   subscribeToNewsletter: NewsletterMutationResponse!
   toggleReviewLike(reviewId: Int!): ToggleReviewLikeResponse!
   toggleWishlist(productId: Int!): ToggleWishlistResponse!
@@ -1518,6 +1833,10 @@ type Query {
   adminCustomizationTypes: [AdminCustomizationTypeSummary!]!
   adminCustomizeCategories: AdminCustomizeCategoriesResponse!
   adminCustomizeCategoryById(id: Int!): AdminCustomizeCategory
+  adminDailyWorkshopBlackoutRules(configId: Int): [AdminDailyWorkshopBlackoutRule!]!
+  adminDailyWorkshopConfig: AdminDailyWorkshopConfig
+  adminDailyWorkshopConfigs: [AdminDailyWorkshopConfig!]!
+  adminDailyWorkshopPricingTiers(configId: Int): [AdminDailyWorkshopPricingTier!]!
   adminDashboardStats: DashboardStats!
   adminEventById(id: String!): AdminEventDetail
   adminEventLevelOptions: [AdminLevelOption!]!
@@ -1538,6 +1857,7 @@ type Query {
   adminUpcomingEvents(limit: Int = 5): [UpcomingEvent!]!
   adminUserById(id: Int!): AdminUserDetail
   adminUserCart(userId: Int!): [AdminUserCartItem!]!
+  adminUserDailyWorkshopRegistrations(userId: Int!): [AdminDailyWorkshopRegistration!]!
   adminUserOrders(userId: Int!): [AdminUserOrder!]!
   adminUserRegistrations(userId: Int!): [AdminUserRegistration!]!
   adminUserWishlist(limit: Int = 10, page: Int = 1, userId: Int!): AdminUserWishlistResponse!
@@ -1550,12 +1870,19 @@ type Query {
   customizationCategories(filter: CustomizationCategoriesFilterInput): CustomizationCategoriesResponse!
   customizationOptionsByCategory(filter: CustomizationOptionsFilterInput!): CustomizationOptionsResponse!
   customizationTypes: [String!]!
+  dailyWorkshopAvailability(filter: DailyWorkshopAvailabilityInput): DailyWorkshopAvailabilityResponse
+  dailyWorkshopPublicConfig: DailyWorkshopConfig
+  dailyWorkshopPublicConfigs: [DailyWorkshopConfig!]!
+  dailyWorkshopRegistrationById(registrationId: String!): DailyWorkshopRegistration
   eventById(id: String!): EventDetail
   eventReviews(eventId: String!, filter: ReviewsFilterInput): ReviewsResponse!
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
   featuredReviews(limit: Int): [FeaturedReview!]!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
+  myCompletedDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
+  myDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
+  myUpcomingDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
   newsletterStatus: NewsletterStatus!
   order(id: String!): Order
   orders(filter: OrdersFilterInput): OrdersResponse!
@@ -1680,6 +2007,11 @@ type RegistrationsResponse {
 type RegistrationsStats {
   pending: Int!
   total: Int!
+}
+
+input RescheduleDailyWorkshopRegistrationInput {
+  registration_id: String!
+  slot_start_times: [DateTime!]!
 }
 
 type ReturnStep {

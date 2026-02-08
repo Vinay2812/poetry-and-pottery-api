@@ -32,6 +32,11 @@ const EVENT_NON_AUTH_RESOLVERS: string[] = [
   "EventWithUserContext",
 ];
 
+const DAILY_WORKSHOP_NON_AUTH_RESOLVERS: string[] = [
+  "DailyWorkshopPublicConfig",
+  "DailyWorkshopAvailability",
+];
+
 const REVIEW_NON_AUTH_RESOLVERS: string[] = ["ProductReviews", "EventReviews"];
 
 const SEARCH_NON_AUTH_RESOLVERS: string[] = ["GlobalSearch"];
@@ -57,6 +62,7 @@ const PUBLIC_CONTENT_NON_AUTH_RESOLVERS: string[] = [
 const NON_AUTH_RESOLVERS: string[] = [
   ...PRODUCT_NON_AUTH_RESOLVERS,
   ...EVENT_NON_AUTH_RESOLVERS,
+  ...DAILY_WORKSHOP_NON_AUTH_RESOLVERS,
   ...REVIEW_NON_AUTH_RESOLVERS,
   ...SEARCH_NON_AUTH_RESOLVERS,
   ...CUSTOMIZATION_NON_AUTH_RESOLVERS,

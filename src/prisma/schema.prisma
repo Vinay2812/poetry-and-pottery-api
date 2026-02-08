@@ -43,8 +43,9 @@ model User {
   wishlists           Wishlist[]
   carts               Cart[]
   product_orders      ProductOrder[]
-  event_registrations EventRegistration[]
-  user_addresses      UserAddress[]
+  event_registrations          EventRegistration[]
+  user_addresses               UserAddress[]
+  daily_workshop_registrations DailyWorkshopRegistration[]
 
   @@map("users")
 }
@@ -236,6 +237,22 @@ enum EventRegistrationStatus {
   PAID
   CONFIRMED
   CANCELLED
+}
+
+enum DailyWorkshopRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CONFIRMED
+  CANCELLED
+}
+
+enum DailyWorkshopBlackoutType {
+  ONE_TIME
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 model EventRegistration {
@@ -445,4 +462,163 @@ model ContentPage {
   updated_at DateTime @default(now()) @updatedAt
 
   @@map("content_pages")
+}
+
+// Daily Workshop Models
+
+model DailyWorkshopConfig {
+  id                    Int     @id @default(autoincrement())
+  key                   String  @unique @default("default")
+  name                  String  @default("Daily Workshop")
+  description           String?
+  is_active             Boolean @default(true)
+  timezone              String  @default("Asia/Kolkata")
+
+  opening_hour          Int     @default(13)
+  closing_hour          Int     @default(19)
+  slot_duration_minutes Int     @default(60)
+
+  slot_capacity         Int     @default(6)
+  booking_window_days   Int     @default(90)
+
+  auto_cancel_on_blackout Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  pricing_tiers  DailyWorkshopPricingTier[]
+  blackout_rules DailyWorkshopBlackoutRule[]
+  registrations  DailyWorkshopRegistration[]
+
+  @@map("daily_workshop_configs")
+}
+
+model DailyWorkshopPricingTier {
+  id                Int     @id @default(autoincrement())
+  config_id         Int
+  hours             Int
+  price_per_person  Int
+  pieces_per_person Int
+  sort_order        Int     @default(0)
+  is_active         Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  config DailyWorkshopConfig @relation(fields: [config_id], references: [id], onDelete: Cascade)
+
+  @@unique([config_id, hours])
+  @@index([config_id])
+  @@index([is_active])
+  @@index([sort_order])
+  @@map("daily_workshop_pricing_tiers")
+}
+
+model DailyWorkshopBlackoutRule {
+  id        String                    @id @default(nanoid(16))
+  config_id Int
+
+  name      String
+  type      DailyWorkshopBlackoutType
+  is_active Boolean                   @default(true)
+  timezone  String                    @default("Asia/Kolkata")
+  reason    String?
+
+  auto_cancel_existing Boolean @default(true)
+
+  one_time_start_at DateTime?
+  one_time_end_at   DateTime?
+
+  recurrence_start_date DateTime?
+  recurrence_end_date   DateTime?
+
+  weekdays   Int[] @default([])
+  month_days Int[] @default([])
+
+  range_start_minutes Int
+  range_end_minutes   Int
+
+  created_by_user_id Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  config                  DailyWorkshopConfig        @relation(fields: [config_id], references: [id], onDelete: Cascade)
+  cancelled_registrations DailyWorkshopRegistration[] @relation("DailyWorkshopCancelledByRule")
+
+  @@index([config_id, is_active])
+  @@index([type, is_active])
+  @@index([one_time_start_at, one_time_end_at])
+  @@index([recurrence_start_date, recurrence_end_date])
+  @@index([created_by_user_id])
+  @@map("daily_workshop_blackout_rules")
+}
+
+model DailyWorkshopRegistration {
+  id        String @id @default(nanoid(16))
+  config_id Int
+  user_id   Int
+
+  participants  Int @default(1)
+  total_hours   Int
+  slots_count   Int
+
+  price_per_person  Int
+  pieces_per_person Int
+  base_amount       Int
+  discount          Int    @default(0)
+  final_amount      Int
+  total_pieces      Int
+  currency          String @default("INR")
+
+  /// [DailyWorkshopPricingSnapshot]
+  pricing_snapshot Json
+
+  status DailyWorkshopRegistrationStatus @default(PENDING)
+
+  request_at   DateTime?
+  approved_at  DateTime?
+  paid_at      DateTime?
+  confirmed_at DateTime?
+  cancelled_at DateTime?
+
+  cancelled_reason              String?
+  cancelled_by_user_id          Int?
+  cancelled_by_blackout_rule_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  config                     DailyWorkshopConfig        @relation(fields: [config_id], references: [id], onDelete: Cascade)
+  user                       User                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  cancelled_by_blackout_rule DailyWorkshopBlackoutRule?  @relation("DailyWorkshopCancelledByRule", fields: [cancelled_by_blackout_rule_id], references: [id], onDelete: SetNull)
+
+  slots DailyWorkshopRegistrationSlot[]
+
+  @@index([config_id])
+  @@index([user_id])
+  @@index([status])
+  @@index([created_at])
+  @@index([cancelled_by_user_id])
+  @@index([cancelled_by_blackout_rule_id])
+  @@map("daily_workshop_registrations")
+}
+
+model DailyWorkshopRegistrationSlot {
+  id              Int      @id @default(autoincrement())
+  registration_id String
+
+  slot_start_at DateTime
+  slot_end_at   DateTime
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  registration DailyWorkshopRegistration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@unique([registration_id, slot_start_at])
+  @@index([slot_start_at])
+  @@index([slot_end_at])
+  @@index([registration_id])
+  @@map("daily_workshop_registration_slots")
 }
