@@ -24,8 +24,8 @@ import {
   AdminDailyWorkshopPricingTierMutationResponse,
   AdminDailyWorkshopRegistration,
   AdminDailyWorkshopRegistrationMutationResponse,
-  AdminUpdateDailyWorkshopRegistrationInput,
   AdminUpdateDailyWorkshopConfigInput,
+  AdminUpdateDailyWorkshopRegistrationInput,
   AdminUpsertDailyWorkshopBlackoutRuleInput,
   AdminUpsertDailyWorkshopPricingTierInput,
 } from "./daily-workshops.type";
@@ -469,7 +469,9 @@ function parseBlackoutRecoveryPayload(
     : [];
 
   const required_slots = Number(blackoutRecovery["required_slots"]);
-  const windowStartMinutesRaw = Number(blackoutRecovery["window_start_minutes"]);
+  const windowStartMinutesRaw = Number(
+    blackoutRecovery["window_start_minutes"],
+  );
   const windowEndMinutesRaw = Number(blackoutRecovery["window_end_minutes"]);
   const normalizedRequiredSlots = Number.isNaN(required_slots)
     ? pending_slot_start_times.length
@@ -1522,22 +1524,23 @@ export class AdminDailyWorkshopsResolver {
     input: AdminUpdateDailyWorkshopRegistrationInput,
   ): Promise<AdminDailyWorkshopRegistrationMutationResponse> {
     return tryCatchAsync(async () => {
-      const registration = await ctx.prisma.dailyWorkshopRegistration.findUnique({
-        where: { id: registrationId },
-        include: {
-          slots: {
-            orderBy: { slot_start_at: "asc" },
-          },
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              image: true,
+      const registration =
+        await ctx.prisma.dailyWorkshopRegistration.findUnique({
+          where: { id: registrationId },
+          include: {
+            slots: {
+              orderBy: { slot_start_at: "asc" },
+            },
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                image: true,
+              },
             },
           },
-        },
-      });
+        });
 
       if (!registration) {
         return {
@@ -1618,7 +1621,10 @@ export class AdminDailyWorkshopsResolver {
 
       const normalizedSlotStarts = Array.from(
         new Map(
-          slotStarts.map((slot) => [new Date(slot).toISOString(), new Date(slot)]),
+          slotStarts.map((slot) => [
+            new Date(slot).toISOString(),
+            new Date(slot),
+          ]),
         ).values(),
       ).sort((a, b) => a.getTime() - b.getTime());
 
@@ -1648,9 +1654,8 @@ export class AdminDailyWorkshopsResolver {
         });
 
       if (conflictingSlot) {
-        const conflictLabel = conflictingSlot.slot_start_at.toLocaleString(
-          "en-IN",
-        );
+        const conflictLabel =
+          conflictingSlot.slot_start_at.toLocaleString("en-IN");
         return {
           success: false,
           registration: null,
@@ -1710,7 +1715,9 @@ export class AdminDailyWorkshopsResolver {
                       deleteMany: {},
                       create: normalizedSlotStarts.map((slotStart) => ({
                         slot_start_at: slotStart,
-                        slot_end_at: new Date(slotStart.getTime() + slotDurationMs),
+                        slot_end_at: new Date(
+                          slotStart.getTime() + slotDurationMs,
+                        ),
                       })),
                     },
                   }
@@ -1733,7 +1740,9 @@ export class AdminDailyWorkshopsResolver {
         },
       );
 
-      await dailyWorkshopCache.invalidateUserRegistrations(registration.user_id);
+      await dailyWorkshopCache.invalidateUserRegistrations(
+        registration.user_id,
+      );
 
       return {
         success: true,

@@ -291,7 +291,9 @@ function parseBlackoutRecoveryPayload(
     : [];
 
   const required_slots = Number(blackoutRecovery["required_slots"]);
-  const windowStartMinutesRaw = Number(blackoutRecovery["window_start_minutes"]);
+  const windowStartMinutesRaw = Number(
+    blackoutRecovery["window_start_minutes"],
+  );
   const windowEndMinutesRaw = Number(blackoutRecovery["window_end_minutes"]);
   const normalizedRequiredSlots = Number.isNaN(required_slots)
     ? pending_slot_start_times.length
