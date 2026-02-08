@@ -5,10 +5,7 @@ import {
   R2_PUBLIC_URL,
   R2_SECRET_ACCESS_KEY,
 } from "@/consts/env";
-import {
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 let s3Client: S3Client | null = null;
