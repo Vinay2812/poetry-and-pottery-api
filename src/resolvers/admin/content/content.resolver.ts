@@ -302,10 +302,10 @@ const DEFAULT_SHIPPING_CONTENT: ShippingPageContent = {
       price: "₹199 flat rate",
     },
     {
-      icon: "globe",
-      title: "International Shipping",
-      description: "10-15 business days",
-      price: "Calculated at checkout",
+      icon: "map-pin",
+      title: "India-Only Delivery",
+      description: "Domestic shipping across eligible Indian PIN codes",
+      price: "International shipping not available",
     },
   ],
   shippingInfo: [
@@ -327,27 +327,27 @@ const DEFAULT_SHIPPING_CONTENT: ShippingPageContent = {
     {
       title: "Delivery Areas",
       content:
-        "We deliver to all major cities in India and select international destinations. Remote areas may require additional delivery time.",
+        "We currently deliver within India only. International shipping is not available at this time. Remote areas may require additional delivery time.",
     },
   ],
   returnsPolicy: [
     {
       icon: "refresh-cw",
-      title: "30-Day Returns",
+      title: "No Returns or Exchanges",
       description:
-        "Not satisfied? Return unused items within 30 days of delivery for a full refund.",
+        "All sales are final. We do not offer returns or exchanges once an order is placed.",
     },
     {
       icon: "shield",
       title: "Damage Protection",
       description:
-        "If your item arrives damaged, contact us within 48 hours for a free replacement or refund.",
+        "If your item arrives damaged, contact us within 48 hours of delivery with clear photos so we can assist.",
     },
     {
-      icon: "repeat",
-      title: "Easy Exchanges",
+      icon: "message-circle",
+      title: "Support for Delivery Issues",
       description:
-        "Want a different color or size? We make exchanges simple and hassle-free.",
+        "For shipping or delivery concerns, reach out via WhatsApp or email and our team will guide you.",
     },
   ],
   returnSteps: [
@@ -355,25 +355,25 @@ const DEFAULT_SHIPPING_CONTENT: ShippingPageContent = {
       step: "01",
       title: "Contact Us",
       description:
-        "Email us at returns@poetryandpottery.com within 30 days of delivery with your order number and reason for return.",
+        "If an item arrives damaged, contact us within 48 hours of delivery with your order number and photos on WhatsApp or email.",
     },
     {
       step: "02",
-      title: "Get Approval",
+      title: "Case Review",
       description:
-        "We'll review your request and send you a return authorization along with shipping instructions.",
+        "Our team will review your case and confirm the next steps based on the damage and order details.",
     },
     {
       step: "03",
-      title: "Ship It Back",
+      title: "Resolution",
       description:
-        "Pack your item securely in its original packaging and ship it to our returns center.",
+        "If eligible, we will provide a replacement or another suitable resolution. Returns/exchanges are not offered for non-damaged items.",
     },
     {
       step: "04",
-      title: "Receive Refund",
+      title: "Follow-up Support",
       description:
-        "Once we receive and inspect your return, we'll process your refund within 5-7 business days.",
+        "Need further help with shipping or delivery? Contact support and we will assist you promptly.",
     },
   ],
 };
@@ -576,7 +576,7 @@ const PAGE_CONFIG: Record<
   about: { title: "About Us", defaultContent: DEFAULT_ABOUT_CONTENT },
   faq: { title: "FAQ", defaultContent: DEFAULT_FAQ_CONTENT },
   shipping: {
-    title: "Shipping & Returns",
+    title: "Shipping & Delivery",
     defaultContent: DEFAULT_SHIPPING_CONTENT,
   },
   care: { title: "Care Instructions", defaultContent: DEFAULT_CARE_CONTENT },
