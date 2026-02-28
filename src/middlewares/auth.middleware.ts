@@ -150,7 +150,6 @@ export const authMiddleWare = async (
     context.user = {
       dbUserId: 1,
       role: UserRole.ADMIN,
-      environment: "local",
     };
   } else if (requiredAuth) {
     throw new GraphQLError("User is not authenticated");

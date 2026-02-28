@@ -3,7 +3,6 @@ import type { UserRole } from "@/prisma/generated/client";
 declare global {
   interface CustomJwtSessionClaims {
     dbUserId?: number;
-    environment?: "development" | "production" | "staging";
     role?: UserRole;
   }
 
