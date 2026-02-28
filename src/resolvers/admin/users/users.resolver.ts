@@ -10,6 +10,7 @@ import {
 } from "@/prisma/generated/client";
 import { Context } from "@/types/context";
 import { tryCatchAsync } from "@/utils/trycatch";
+import { clerkClient } from "@clerk/express";
 
 import {
   AdminUserCartItem,
@@ -394,16 +395,24 @@ export class AdminUsersResolver {
 
       const user = await ctx.prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true },
+        select: { id: true, auth_id: true },
       });
 
       if (!user) {
         return { success: false, error: "User not found" };
       }
 
-      await ctx.prisma.user.update({
-        where: { id: userId },
-        data: { role },
+      await ctx.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: { role },
+        });
+        await clerkClient.users.updateUserMetadata(user.auth_id, {
+          publicMetadata: {
+            role,
+            dbUserId: user.id,
+          },
+        });
       });
 
       return { success: true, error: null };
