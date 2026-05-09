@@ -37,6 +37,7 @@ export class UserResolver {
         throw new GraphQLError("User ID not found in context");
       }
 
+      const now = new Date();
       const user = await ctx.prisma.user.findUnique({
         where: {
           id: userId,
@@ -46,7 +47,11 @@ export class UserResolver {
             select: {
               carts: true,
               wishlists: true,
-              event_registrations: true,
+              event_registrations: {
+                where: {
+                  event: { ends_at: { gt: now } },
+                },
+              },
               product_orders: {
                 where: {
                   status: "PENDING",
