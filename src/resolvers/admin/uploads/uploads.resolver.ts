@@ -21,9 +21,11 @@ const ALLOWED_IMAGE_TYPES = [
   "image/webp",
   "image/svg+xml",
 ];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 
-// Max file size: 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Max file sizes
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
 @Resolver()
 export class AdminUploadsResolver {
@@ -45,18 +47,21 @@ export class AdminUploadsResolver {
       }
 
       // Validate content type
-      if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+      const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
+      const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
+      if (!isVideo && !isImage) {
         return {
           success: false,
-          error: `Invalid content type. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`,
+          error: `Invalid content type. Allowed: ${[...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES].join(", ")}`,
         };
       }
 
       // Validate file size
-      if (fileSize > MAX_FILE_SIZE) {
+      const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      if (fileSize > maxSize) {
         return {
           success: false,
-          error: `File size exceeds maximum of ${MAX_FILE_SIZE / 1024 / 1024}MB`,
+          error: `File size exceeds maximum of ${maxSize / 1024 / 1024}MB`,
         };
       }
 

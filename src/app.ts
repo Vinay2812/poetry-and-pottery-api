@@ -17,7 +17,9 @@ import {
   ORIGINS,
   PORT,
 } from "@/consts/env";
+import { prisma } from "@/lib/prisma";
 import * as Resolvers from "@/resolvers";
+import { seedSiteContentDefaults } from "@/resolvers/admin/settings/seed";
 import { Context } from "@/types/context";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
@@ -119,6 +121,11 @@ class App {
     const apolloServer = await this.startApolloServer();
     await this.configureMiddleware();
     await this.configureRoutes(apolloServer);
+    try {
+      await seedSiteContentDefaults(prisma);
+    } catch (err) {
+      console.error("[seed] seedSiteContentDefaults failed:", err);
+    }
     this.httpServer.listen(PORT, () => {
       console.log(`===============================================`);
       console.log(

@@ -850,6 +850,14 @@ input AssignProductsToCollectionInput {
   productIds: [Int!]!
 }
 
+type BrandAssets {
+  appleTouchIcon: String!
+  defaultOgImage: String!
+  favicon: String!
+  logo: String!
+  logoDark: String!
+}
+
 type BulkDeleteEventResult {
   action: String!
   error: String
@@ -1440,6 +1448,33 @@ type FeaturedReview {
   user_id: Int!
 }
 
+type FooterColumn {
+  links: [FooterLink!]!
+  title: String!
+}
+
+input FooterColumnInput {
+  links: [FooterLinkInput!]!
+  title: String!
+}
+
+type FooterContent {
+  columns: [FooterColumn!]!
+  copyright: String!
+  newsletterBlurb: String!
+  tagline: String!
+}
+
+type FooterLink {
+  href: String!
+  label: String!
+}
+
+input FooterLinkInput {
+  href: String!
+  label: String!
+}
+
 input GetPresignedUploadUrlInput {
   contentType: String!
   fileSize: Int!
@@ -1467,10 +1502,32 @@ type GlobalSearchResponse {
 }
 
 type HeroImages {
+  about: String!
+  care: String!
+  contact: String!
+  customize: String!
   events: String!
+  faq: String!
   home: String!
   ourStory: String!
-  products: String!
+  privacy: String!
+  shipping: String!
+  store: String!
+  terms: String!
+}
+
+type HeroVideoEntry {
+  poster: String!
+  src: String!
+}
+
+input HeroVideoEntryInput {
+  poster: String
+  src: String
+}
+
+type HeroVideos {
+  home: HeroVideoEntry!
 }
 
 """
@@ -1516,6 +1573,7 @@ type Mutation {
   adminToggleCustomizationOptionActive(id: Int!): AdminCustomizationMutationResponse!
   adminToggleCustomizeCategoryActive(id: Int!): AdminCustomizeCategoryMutationResponse!
   adminToggleProductActive(id: Int!): AdminMutationResponse!
+  adminUpdateBrandAssets(input: UpdateBrandAssetsInput!): AdminSettingsMutationResponse!
   adminUpdateCategoryIcon(category: String!, icon: String!): AdminCategoryMutationResponse!
   adminUpdateCollection(id: Int!, input: UpdateCollectionInput!): AdminCollectionMutationResponse!
   adminUpdateContactInfo(input: UpdateContactInfoInput!): AdminSettingsMutationResponse!
@@ -1527,14 +1585,18 @@ type Mutation {
   adminUpdateDailyWorkshopRegistrationStatus(registrationId: String!, status: String!): AdminDailyWorkshopMutationResponse!
   adminUpdateEvent(id: String!, input: UpdateEventInput!): AdminEventMutationResponse!
   adminUpdateEventStatus(id: String!, status: String!): AdminEventMutationResponse!
+  adminUpdateFooterContent(input: UpdateFooterContentInput!): AdminSettingsMutationResponse!
   adminUpdateHeroImages(input: UpdateHeroImagesInput!): AdminSettingsMutationResponse!
+  adminUpdateHeroVideos(input: UpdateHeroVideosInput!): AdminSettingsMutationResponse!
   adminUpdateOrderDiscount(discount: Float!, orderId: String!): AdminOrderMutationResponse!
   adminUpdateOrderItemDiscount(discount: Float!, itemId: Int!): AdminOrderMutationResponse!
   adminUpdateOrderItemQuantity(itemId: Int!, quantity: Int!): AdminOrderMutationResponse!
   adminUpdateOrderStatus(orderId: String!, status: String!): AdminOrderMutationResponse!
+  adminUpdatePageTaglines(input: UpdatePageTaglinesInput!): AdminSettingsMutationResponse!
   adminUpdateProduct(id: Int!, input: UpdateProductInput!): AdminMutationResponse!
   adminUpdateRegistrationDetails(input: UpdateRegistrationDetailsInput!, registrationId: String!): AdminRegistrationMutationResponse!
   adminUpdateRegistrationStatus(registrationId: String!, status: String!): AdminRegistrationMutationResponse!
+  adminUpdateSeoMetadata(input: UpdateSeoMetadataInput!): AdminSettingsMutationResponse!
   adminUpdateSocialLinks(input: UpdateSocialLinksInput!): AdminSettingsMutationResponse!
   adminUpdateUserRole(role: String!, userId: Int!): AdminUserMutationResponse!
   adminUpsertDailyWorkshopBlackoutRule(configId: Int, input: AdminUpsertDailyWorkshopBlackoutRuleInput!): AdminDailyWorkshopBlackoutRuleMutationResponse!
@@ -1661,6 +1723,17 @@ type OrdersStats {
   pending: Int!
   processing: Int!
   total: Int!
+}
+
+type PageContent {
+  hero: String!
+  seo: SeoEntry!
+  tagline: TaglineEntry!
+  video: HeroVideoEntry
+}
+
+type PageTaglines {
+  entries: JSON!
 }
 
 type PresignedUploadUrlResponse {
@@ -1816,6 +1889,7 @@ type Query {
   adminAllCollections: [AdminProductCollection!]!
   adminAllConfiguredCategories: [AdminCategoryConfig!]!
   adminAvailableIcons: [AdminIconOption!]!
+  adminBrandAssets: BrandAssets!
   adminCategories: AdminCategoriesResponse!
   adminCollectionById(id: Int!): AdminCollectionDetail
   adminCollections(filter: AdminCollectionsFilterInput): AdminCollectionsResponse!
@@ -1839,14 +1913,19 @@ type Query {
   adminEventReviews(eventId: String!): AdminEventReviewsResponse!
   adminEventStatusOptions: [AdminStatusOption!]!
   adminEvents(filter: AdminEventsFilterInput): AdminEventsResponse!
+  adminFooterContent: FooterContent!
   adminHeroImages: HeroImages!
+  adminHeroVideos: HeroVideos!
   adminLowStockProducts(limit: Int = 10): [LowStockProduct!]!
   adminNewsletterSubscribers(limit: Int = 10): [NewsletterSubscriber!]!
+  adminPageContent(pageSlug: String!): PageContent!
+  adminPageTaglines: PageTaglines!
   adminProductById(id: Int!): AdminProductDetail
   adminProductReviews(productId: Int!): AdminProductReviewsResponse!
   adminProducts(filter: AdminProductsFilterInput): AdminProductsResponse!
   adminRecentOrders(limit: Int = 5): [RecentOrder!]!
   adminRecentRegistrations(limit: Int = 5): [RecentRegistration!]!
+  adminSeoMetadata: SeoMetadata!
   adminSocialLinks: SocialLinks!
   adminUpcomingEvents(limit: Int = 5): [UpcomingEvent!]!
   adminUserById(id: Int!): AdminUserDetail
@@ -1856,6 +1935,7 @@ type Query {
   adminUserRegistrations(userId: Int!): [AdminUserRegistration!]!
   adminUserWishlist(limit: Int = 10, page: Int = 1, userId: Int!): AdminUserWishlistResponse!
   adminUsers(filter: AdminUsersFilterInput): AdminUsersResponse!
+  brandAssets: BrandAssets!
   cart: CartResponse!
   categories: [String!]!
   categoriesWithImages: [CategoryWithImage!]!
@@ -1873,13 +1953,18 @@ type Query {
   eventWithUserContext(eventId: String!): EventWithUserContext
   events(filter: EventsFilterInput): EventsResponse!
   featuredReviews(limit: Int): [FeaturedReview!]!
+  footerContent: FooterContent!
   globalSearch(input: GlobalSearchInput!): GlobalSearchResponse!
+  heroImages: HeroImages!
+  heroVideos: HeroVideos!
   myCompletedDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
   myDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
   myUpcomingDailyWorkshopRegistrations(filter: DailyWorkshopRegistrationsFilterInput): DailyWorkshopRegistrationsResponse!
   newsletterStatus: NewsletterStatus!
   order(id: String!): Order
   orders(filter: OrdersFilterInput): OrdersResponse!
+  pageContent(pageSlug: String!): PageContent!
+  pageTaglines: PageTaglines!
   pastEvents(filter: EventsFilterInput): EventsResponse!
   productById(id: Int!): ProductDetail
   productReviews(filter: ReviewsFilterInput, productId: Int!): ReviewsResponse!
@@ -1892,6 +1977,8 @@ type Query {
   publicShippingContent: ShippingPageContent
   publicTermsContent: TermsPageContent
   recommendedProducts(limit: Int, page: Int, productId: Int): RecommendedProductsResponse!
+  seoMetadata: SeoMetadata!
+  siteContentDefaults: SiteContentDefaults!
   upcomingEvents(filter: EventsFilterInput): EventsResponse!
   upcomingRegistrations(filter: RegistrationsFilterInput): RegistrationsResponse!
   user: UserResponse!
@@ -2070,6 +2157,26 @@ type SearchCounts {
   products: Int!
 }
 
+type SeoEntry {
+  description: String!
+  ogDescription: String!
+  ogImage: String!
+  ogTitle: String!
+  title: String!
+}
+
+input SeoEntryInput {
+  description: String
+  ogDescription: String
+  ogImage: String
+  ogTitle: String
+  title: String
+}
+
+type SeoMetadata {
+  entries: JSON!
+}
+
 input ShippingAddressInput {
   address_line_1: String!
   address_line_2: String
@@ -2099,11 +2206,27 @@ type ShippingPageContent {
   shippingOptions: [ShippingOption!]!
 }
 
+type SiteContentDefaults {
+  value: JSON!
+}
+
 type SocialLinks {
   facebook: String!
   instagram: String!
   pinterest: String!
   twitter: String!
+}
+
+type TaglineEntry {
+  ctaText: String!
+  heading: String!
+  subheading: String!
+}
+
+input TaglineEntryInput {
+  ctaText: String
+  heading: String
+  subheading: String
 }
 
 type TermsPageContent {
@@ -2166,6 +2289,14 @@ input UpdateAddressInput {
   name: String
   state: String
   zip: String
+}
+
+input UpdateBrandAssetsInput {
+  appleTouchIcon: String
+  defaultOgImage: String
+  favicon: String
+  logo: String
+  logoDark: String
 }
 
 input UpdateCartQuantityInput {
@@ -2234,11 +2365,35 @@ input UpdateEventInput {
   total_seats: Int
 }
 
+input UpdateFooterContentInput {
+  columns: [FooterColumnInput!]
+  copyright: String
+  newsletterBlurb: String
+  tagline: String
+}
+
 input UpdateHeroImagesInput {
+  about: String
+  care: String
+  contact: String
+  customize: String
   events: String
+  faq: String
   home: String
   ourStory: String
-  products: String
+  privacy: String
+  shipping: String
+  store: String
+  terms: String
+}
+
+input UpdateHeroVideosInput {
+  home: HeroVideoEntryInput
+}
+
+input UpdatePageTaglinesInput {
+  entry: TaglineEntryInput!
+  page: String!
 }
 
 input UpdateProductInput {
@@ -2262,6 +2417,11 @@ input UpdateRegistrationDetailsInput {
   discount: Float!
   price: Float!
   seatsReserved: Int!
+}
+
+input UpdateSeoMetadataInput {
+  entry: SeoEntryInput!
+  page: String!
 }
 
 input UpdateSocialLinksInput {
