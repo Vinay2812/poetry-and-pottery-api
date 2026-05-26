@@ -222,6 +222,7 @@ export class ProductsResolver {
 
         // Build where clause for price stats (respects other filters but not price filter)
         const priceStatsWhere = {
+          ...archiveConditions,
           ...(filter.search && {
             OR: [
               {
@@ -243,6 +244,7 @@ export class ProductsResolver {
           ...(filter.materials?.length && {
             material: { in: filter.materials },
           }),
+          ...collectionFilter,
         };
 
         const orderBy: Prisma.ProductOrderByWithRelationInput[] = [
@@ -297,12 +299,13 @@ export class ProductsResolver {
           mapToProductBase(product),
         );
 
-        // Calculate price range and histogram
+        // Slider bounds and histogram both use the price-excluded filter so the
+        // distribution stays stable as the user drags the price slider. The slider
+        // window only changes bar colors in the UI, not bar heights.
         const prices = priceStats.map((p) => p.price);
         const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
         const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
-        // Generate histogram (30 buckets)
         const bucketCount = 30;
         const range = maxPrice - minPrice || 1;
         const step = range / bucketCount;
