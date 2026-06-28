@@ -40,10 +40,35 @@ export class AdminUsersResolver {
     const where: Prisma.UserWhereInput = {};
 
     if (filter?.search) {
+      const search = filter.search.trim();
+
       where.OR = [
-        { name: { contains: filter.search, mode: "insensitive" } },
-        { email: { contains: filter.search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+        // Match the user who owns an order / registration with this id.
+        {
+          product_orders: {
+            some: { id: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          event_registrations: {
+            some: { id: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          daily_workshop_registrations: {
+            some: { id: { contains: search, mode: "insensitive" } },
+          },
+        },
       ];
+
+      // Allow searching by the numeric user id directly.
+      const numericId = Number.parseInt(search, 10);
+      if (Number.isInteger(numericId) && String(numericId) === search) {
+        where.OR.push({ id: numericId });
+      }
     }
 
     if (filter?.role) {
